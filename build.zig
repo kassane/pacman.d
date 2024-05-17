@@ -18,22 +18,26 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
     });
-    // get libsokol
-    b.installArtifact(sokol.artifact("sokol"));
+    const dub_artifact = b.option(bool, "dub-artifact", "enable dub artifact") orelse false;
 
-    try buildD(b, .{
-        .name = "pacman-d",
-        .target = target,
-        .optimize = optimize,
-        .betterC = true, // disable D runtimeGC
-        .artifact = sokol.artifact("sokol"),
-        .sources = &.{"source/app.d"},
-        .dflags = &.{
-            "-w",
-            "-Isource",
-            b.fmt("-I{s}",.{sokol.path("src").getPath(b)}),
-        },
-    });
+    if (dub_artifact) {
+        // get libsokol
+        b.installArtifact(sokol.artifact("sokol"));
+    } else {
+        try buildD(b, .{
+            .name = "pacman-d",
+            .target = target,
+            .optimize = optimize,
+            .betterC = true, // disable D runtimeGC
+            .artifact = sokol.artifact("sokol"),
+            .sources = &.{"source/app.d"},
+            .dflags = &.{
+                "-w",
+                "-Isource",
+                b.fmt("-I{s}", .{sokol.path("src").getPath(b)}),
+            },
+        });
+    }
 }
 fn buildD(b: *std.Build, options: abs.DCompileStep) !void {
     const exe = try abs.ldcBuildStep(b, options);

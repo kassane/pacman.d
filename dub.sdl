@@ -11,4 +11,4 @@ lflags "-lObjC" "-all_load" "-framework" "Cocoa" "-framework" "QuartzCore" "-fra
 libs "user32" "gdi32" "kernel32" "dxgi" "d3d11" "ole32" platform="windows"
 lflags "-Lzig-out/lib" platform="posix"
 lflags "/LIBPATH:zig-out/lib" platform="windows"
-preBuildCommands "zig build -Doptimize=ReleaseFast"
+preBuildCommands "zig build -Doptimize=ReleaseFast -Ddub-artifact"
