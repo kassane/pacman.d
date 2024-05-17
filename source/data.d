@@ -1,4 +1,4 @@
-module pacman.data;
+module data;
 
 extern(C):
 @nogc nothrow:

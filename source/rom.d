@@ -1,4 +1,4 @@
-module pacman.rom;
+module rom;
 
 extern (C):
 @nogc nothrow:

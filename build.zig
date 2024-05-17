@@ -31,6 +31,7 @@ pub fn build(b: *std.Build) !void {
         .dflags = &.{
             "-w",
             "-Isource",
+            b.fmt("-I{s}",.{sokol.path("src").getPath(b)}),
         },
     });
 }

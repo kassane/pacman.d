@@ -1,4 +1,4 @@
-module pacman.main;
+module pacman;
 
 /*------------------------------------------------------------------------------
     pacman.d
@@ -133,8 +133,8 @@ import sg = sokol.gfx;
 import sglue = sokol.glue;
 import sapp = sokol.app;
 import log = sokol.log;
-import data = pacman.data;
-import rom = pacman.rom;
+import data;
+import rom;
 
 extern (C):
 
