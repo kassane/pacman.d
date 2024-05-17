@@ -1,6 +1,8 @@
 module data;
 
-extern(C):
+import sg = sokol.gfx;
+
+extern (C):
 @nogc nothrow:
 
 // config defines and global constants
@@ -109,14 +111,14 @@ enum
 }
 
 // the top-level game states (intro => game => intro)
-enum gamestate_t
+enum GameState
 {
 	GAMESTATE_INTRO = 0,
 	GAMESTATE_GAME = 1
 }
 
 // directions NOTE: bit0==0: horizontal movement, bit0==1: vertical movement
-enum dir_t
+enum Dir
 {
 	DIR_RIGHT = 0, // 000
 	DIR_DOWN = 1, // 001
@@ -126,7 +128,7 @@ enum dir_t
 }
 
 // bonus fruit types
-enum fruit_t
+enum Fruit
 {
 	FRUIT_NONE = 0,
 	FRUIT_CHERRIES = 1,
@@ -141,7 +143,7 @@ enum fruit_t
 }
 
 // sprite 'hardware' indices
-enum sprite_index_t
+enum SpriteIndex
 {
 	SPRITE_PACMAN = 0,
 	SPRITE_BLINKY = 1,
@@ -152,7 +154,7 @@ enum sprite_index_t
 }
 
 // ghost types
-enum ghosttype_t
+enum GhostType
 {
 	GHOSTTYPE_BLINKY = 0,
 	GHOSTTYPE_PINKY = 1,
@@ -162,7 +164,7 @@ enum ghosttype_t
 }
 
 // ghost AI states
-enum ghoststate_t
+enum GhostState
 {
 	GHOSTSTATE_NONE = 0,
 	GHOSTSTATE_CHASE = 1, // currently chasing Pacman
@@ -175,7 +177,7 @@ enum ghoststate_t
 }
 
 // reasons why game loop is frozen
-enum freezetype_t
+enum FreezeType
 {
 	FREEZETYPE_PRELUDE = 1 << 0, // game prelude is active (with the game start tune playing)
 	FREEZETYPE_READY = 1 << 1, // READY! phase is active (at start of a new game round)
@@ -185,81 +187,81 @@ enum freezetype_t
 }
 
 // a trigger holds a specific game-tick when an action should be started
-struct trigger_t
+struct Trigger
 {
 	uint tick;
 }
 
 // a 2D integer vector (used both for pixel- and tile-coordinates)
-struct int2_t
+struct Int2
 {
 	short x;
 	short y;
 }
 
 // common state for pacman and ghosts
-struct actor_t
+struct Actor
 {
-	dir_t dir; // current movement direction
-	int2_t pos; // position of sprite center in pixel coords
+	Dir dir; // current movement direction
+	Int2 pos; // position of sprite center in pixel coords
 	uint anim_tick; // incremented when actor moved in current tick
 }
 
 // ghost AI state
-struct ghost_t
+struct Ghost
 {
-	actor_t actor;
-	ghosttype_t type;
-	dir_t next_dir; // ghost AI looks ahead one tile when deciding movement direction
-	int2_t target_pos; // current target position in tile coordinates
-	ghoststate_t state;
-	trigger_t frightened; // game tick when frightened mode was entered
-	trigger_t eaten; // game tick when eaten by Pacman
+	Actor actor;
+	GhostType type;
+	Dir next_dir; // ghost AI looks ahead one tile when deciding movement direction
+	Int2 target_pos; // current target position in tile coordinates
+	GhostState state;
+	Trigger frightened; // game tick when frightened mode was entered
+	Trigger eaten; // game tick when eaten by Pacman
 	ushort dot_counter; // used to decide when to leave the ghost house
 	ushort dot_limit;
 }
 
 // pacman state
-struct pacman_t
+struct Pacman
 {
-	actor_t actor;
+	Actor actor;
 }
 
 // the tile- and sprite-renderer's vertex structure
-struct vertex_t
+struct Vertex
 {
-	float x;
-	float y; // screen coords [0..1]
-	float u;
-	float v; // tile texture coords
+	float x = 0.0f;
+	float y = 0.0f; // screen coords [0..1]
+	float u = 0.0f;
+	float v = 0.0f; // tile texture coords
 	uint attr; // x: color code, y: opacity (opacity only used for fade effect)
 }
 
 // sprite state
-struct sprite_t
+struct Sprite
 {
 	bool enabled; // if false sprite is deactivated
 	ubyte tile;
 	ubyte color; // sprite-tile number (0..63), color code
 	bool flipx;
 	bool flipy; // horizontal/vertical flip
-	int2_t pos; // pixel position of the sprite's top-left corner
+	Int2 pos; // pixel position of the sprite's top-left corner
 }
 
 // debug visualization markers (see DBG_MARKERS)
-struct debugmarker_t
+struct DebugMarker
 {
 	bool enabled;
 	ubyte tile;
 	ubyte color; // tile and color code
-	int2_t tile_pos;
+	Int2 tile_pos;
 }
 
 // callback function prototype for procedural sounds
 alias sound_func_t = void function(int sound_slot);
 
 // a sound effect description used as param for snd_start()
-struct sound_desc_t
+struct SoundDesc
 {
 	sound_func_t func; // callback function (if procedural sound)
 	const(uint)* ptr; // pointer to register dump data (if a register-dump sound)
@@ -268,18 +270,18 @@ struct sound_desc_t
 }
 
 // a sound 'hardware' voice
-struct voice_t
+struct Voice
 {
 	uint counter; // 20-bit counter, top 5 bits are index into wavetable ROM
 	uint frequency; // 20-bit frequency (added to counter at 96kHz)
 	ubyte waveform; // 3-bit waveform index
 	ubyte volume; // 4-bit volume
-	float sample_acc; // current float sample accumulator
-	float sample_div; // current float sample divisor
+	float sample_acc = 0.0f; // current float sample accumulator
+	float sample_div = 0.0f; // current float sample divisor
 }
 
 // flags for sound_t.flags
-enum soundflag_t
+enum SoundFlag
 {
 	SOUNDFLAG_VOICE0 = 1 << 0,
 	SOUNDFLAG_VOICE1 = 1 << 1,
@@ -288,14 +290,273 @@ enum soundflag_t
 }
 
 // a currently playing sound effect
-struct sound_t
+struct Sound
 {
 	uint cur_tick; // current tick counter
 	sound_func_t func; // optional function pointer for prodecural sounds
 	uint num_ticks; // length of register dump sound effect in 60Hz ticks
-	uint stride; // number of uint32_t values per tick (only for register dump effects)
+	uint stride; // number of uint values per tick (only for register dump effects)
 	const(uint)* data; // 3 * num_ticks register dump values
 	ubyte flags; // combination of soundflag_t (active voices)
 }
 
 // all state is in a single nested struct
+static struct State
+{
+
+	GameState gamestate; // the current gamestate (intro => game => intro)
+
+	struct Timing
+	{
+		uint tick; // the central game tick, this drives the whole game
+		size_t laptime_store; // helper variable to measure frame duration
+		int tick_accum; // helper variable to decouple ticks from frame rate
+	}
+	Timing timing;
+
+	// intro state
+	struct Intro
+	{
+		Trigger started; // tick when intro-state was started
+	}
+	Intro intro;
+
+	// game state
+	struct Game
+	{
+		uint xorshift; // current xorshift random-number-generator state
+		uint hiscore; // hiscore / 10
+		Trigger started;
+		Trigger ready_started;
+		Trigger round_started;
+		Trigger round_won;
+		Trigger game_over;
+		Trigger dot_eaten; // last time Pacman ate a dot
+		Trigger pill_eaten; // last time Pacman ate a pill
+		Trigger ghost_eaten; // last time Pacman ate a ghost
+		Trigger pacman_eaten; // last time Pacman was eaten by a ghost
+		Trigger fruit_eaten; // last time Pacman has eaten the bonus fruit
+		Trigger force_leave_house; // starts when a dot is eaten
+		Trigger fruit_active; // starts when bonus fruit is shown
+		ubyte freeze; // combination of FREEZETYPE_* flags
+		ubyte round; // current game round, 0, 1, 2...
+		uint score; // score / 10
+		byte num_lives;
+		ubyte num_ghosts_eaten; // number of ghosts easten with current pill
+		ubyte num_dots_eaten; // if == NUM_DOTS, Pacman wins the round
+		bool global_dot_counter_active; // set to true when Pacman loses a life
+		ubyte global_dot_counter; // the global dot counter for the ghost-house-logic
+		Ghost[GhostType.NUM_GHOSTS] ghost;
+		Pacman pacman;
+		Fruit active_fruit;
+	}
+	Game game;
+
+	// the current input state
+	struct Input
+	{
+		bool enabled;
+		bool up;
+		bool down;
+		bool left;
+		bool right;
+		bool esc; // only for debugging (see DBG_ESCACPE)
+		bool anykey;
+	}
+	Input input;
+
+	// the audio subsystem is essentially a Namco arcade board sound emulator
+	struct Audio
+	{
+		Voice[NUM_VOICES] voice;
+		Sound[NUM_SOUNDS] sound;
+		int voice_tick_accum;
+		int voice_tick_period;
+		int sample_duration_ns;
+		int sample_accum;
+		uint num_samples;
+		float[NUM_SAMPLES] sample_buffer = 0.0f;
+	}
+	Audio audio;
+
+	// the gfx subsystem implements a simple tile+sprite renderer
+	struct Gfx
+	{
+		// fade-in/out timers and current value
+		Trigger fadein;
+		Trigger fadeout;
+		ubyte fade;
+
+		// the 36x28 tile framebuffer
+		ubyte[DISPLAY_TILES_Y][DISPLAY_TILES_X] video_ram; // tile codes
+		ubyte[DISPLAY_TILES_Y][DISPLAY_TILES_X] color_ram; // color codes
+
+		// up to 8 sprites
+		Sprite[NUM_SPRITES] sprite;
+
+		// up to 16 debug markers
+		DebugMarker[NUM_DEBUG_MARKERS] debug_marker;
+
+		// sokol-gfx resources
+		sg.PassAction pass_action;
+		struct Offscreen
+		{
+			sg.Buffer vbuf;
+			sg.Image tile_img;
+			sg.Image palette_img;
+			sg.Image render_target;
+			sg.Sampler sampler;
+			sg.Pipeline pip;
+			sg.Attachments attachments;
+		}
+
+		struct Display
+		{
+			sg.Buffer quad_vbuf;
+			sg.Pipeline pip;
+			sg.Sampler sampler;
+		}
+
+		// intermediate vertex buffer for tile- and sprite-rendering
+		int num_vertices;
+		Vertex[MAX_VERTICES] vertices;
+
+		// scratch-buffer for tile-decoding (only happens once)
+		ubyte[TILE_TEXTURE_HEIGHT][TILE_TEXTURE_WIDTH] tile_pixels;
+
+		// scratch buffer for the color palette
+		uint[256] color_palette;
+	}
+	Gfx gfx;
+}
+
+// scatter target positions (in tile coords)
+static const Int2[GhostType.NUM_GHOSTS] ghost_scatter_targets = [
+	{25, 0}, {2, 0}, {27, 34}, {0, 34}
+];
+
+// starting positions for ghosts (pixel coords)
+static const Int2[GhostType.NUM_GHOSTS] ghost_starting_pos = [
+	{14 * 8, 14 * 8 + 4},
+	{14 * 8, 17 * 8 + 4},
+	{12 * 8, 17 * 8 + 4},
+	{16 * 8, 17 * 8 + 4},
+];
+
+// target positions for ghost entering the ghost house (pixel coords)
+static const Int2[GhostType.NUM_GHOSTS] ghost_house_target_pos = [
+	{14 * 8, 17 * 8 + 4},
+	{14 * 8, 17 * 8 + 4},
+	{12 * 8, 17 * 8 + 4},
+	{16 * 8, 17 * 8 + 4},
+];
+
+// fruit tiles, sprite tiles and colors
+static const ubyte[3][Fruit.NUM_FRUITS] fruit_tiles_colors = [
+	[0, 0, 0], // FRUIT_NONE
+	[TILE_CHERRIES, SPRITETILE_CHERRIES, COLOR_CHERRIES],
+	[TILE_STRAWBERRY, SPRITETILE_STRAWBERRY, COLOR_STRAWBERRY],
+	[TILE_PEACH, SPRITETILE_PEACH, COLOR_PEACH],
+	[TILE_APPLE, SPRITETILE_APPLE, COLOR_APPLE],
+	[TILE_GRAPES, SPRITETILE_GRAPES, COLOR_GRAPES],
+	[TILE_GALAXIAN, SPRITETILE_GALAXIAN, COLOR_GALAXIAN],
+	[TILE_BELL, SPRITETILE_BELL, COLOR_BELL],
+	[TILE_KEY, SPRITETILE_KEY, COLOR_KEY]
+];
+
+// the tiles for displaying the bonus-fruit-score, this is a number built from 4 tiles
+static const ubyte[4][Fruit.NUM_FRUITS] fruit_score_tiles = [
+	[0x40, 0x40, 0x40, 0x40], // FRUIT_NONE
+	[0x40, 0x81, 0x85, 0x40], // FRUIT_CHERRIES: 100
+	[0x40, 0x82, 0x85, 0x40], // FRUIT_STRAWBERRY: 300
+	[0x40, 0x83, 0x85, 0x40], // FRUIT_PEACH: 500
+	[0x40, 0x84, 0x85, 0x40], // FRUIT_APPLE: 700
+	[0x40, 0x86, 0x8D, 0x8E], // FRUIT_GRAPES: 1000
+	[0x87, 0x88, 0x8D, 0x8E], // FRUIT_GALAXIAN: 2000
+	[0x89, 0x8A, 0x8D, 0x8E], // FRUIT_BELL: 3000
+	[0x8B, 0x8C, 0x8D, 0x8E] // FRUIT_KEY: 5000
+];
+
+// level specifications (see pacman_dossier.pdf)
+struct LevelSpec
+{
+	Fruit bonus_fruit;
+	uint bonus_score;
+	uint fright_ticks;
+}
+
+enum
+{
+	MAX_LEVELSPEC = 21,
+}
+
+static const LevelSpec[MAX_LEVELSPEC] levelspec_table = [
+	{Fruit.FRUIT_CHERRIES, 10, 6 * 60,},
+	{Fruit.FRUIT_STRAWBERRY, 30, 5 * 60,},
+	{Fruit.FRUIT_PEACH, 50, 4 * 60,},
+	{Fruit.FRUIT_PEACH, 50, 3 * 60,},
+	{Fruit.FRUIT_APPLE, 70, 2 * 60,},
+	{Fruit.FRUIT_APPLE, 70, 5 * 60,},
+	{Fruit.FRUIT_GRAPES, 100, 2 * 60,},
+	{Fruit.FRUIT_GRAPES, 100, 2 * 60,},
+	{Fruit.FRUIT_GALAXIAN, 200, 1 * 60,},
+	{Fruit.FRUIT_GALAXIAN, 200, 5 * 60,},
+	{Fruit.FRUIT_BELL, 300, 2 * 60,},
+	{Fruit.FRUIT_BELL, 300, 1 * 60,},
+	{Fruit.FRUIT_KEY, 500, 1 * 60,},
+	{Fruit.FRUIT_KEY, 500, 3 * 60,},
+	{Fruit.FRUIT_KEY, 500, 1 * 60,},
+	{Fruit.FRUIT_KEY, 500, 1 * 60,},
+	{Fruit.FRUIT_KEY, 500, 1,},
+	{Fruit.FRUIT_KEY, 500, 1 * 60,},
+	{Fruit.FRUIT_KEY, 500, 1,},
+	{Fruit.FRUIT_KEY, 500, 1,},
+	{Fruit.FRUIT_KEY, 500, 1,},
+];
+
+// forward-declared sound-effect register dumps (recorded from Pacman arcade emulator)
+static const uint[490] snd_dump_prelude = 0;
+static const uint[90] snd_dump_dead = 0;
+
+// sound effect description structs
+static const SoundDesc snd_prelude = {
+	ptr: snd_dump_prelude.ptr,
+	size: snd_dump_prelude.sizeof,
+	voice: [true, true, false]
+};
+
+static const SoundDesc snd_dead = {
+	ptr: snd_dump_dead.ptr,
+	size: snd_dump_dead.sizeof,
+	voice: [false, false, true]
+};
+
+// static const SoundDesc snd_eatdot1 = {
+//     func : snd_func_eatdot1.ptr,
+//     voice : [ false, false, true ]
+// };
+
+// static const SoundDesc snd_eatdot2 = {
+//     func : snd_func_eatdot2.ptr,
+//     voice : [ false, false, true ]
+// };
+
+// static const SoundDesc snd_eatghost = {
+//     func : snd_func_eatghost.ptr,
+//     voice : [ false, false, true ]
+// };
+
+// static const SoundDesc snd_eatfruit = {
+//     func : snd_func_eatfruit.ptr,
+//     voice : [ false, false, true ]
+// };
+
+// static const SoundDesc snd_weeooh = {
+//     func : snd_func_weeooh,
+//     voice : [ false, true, false ]
+// };
+
+// static const SoundDesc snd_frightened = {
+//     func : snd_func_frightened,
+//     voice: [ false, true, false ]
+// };
