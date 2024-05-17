@@ -145,12 +145,6 @@ static void init() {
         logger: { func: &log.slog_func },
     };
     sg.setup(gfx);
-    debug {
-        import std.stdio : writeln;
-        try {
-            writeln("Backend: ", sg.queryBackend());
-        } catch (Exception) {}
-    }
 }
 
 static void frame() {

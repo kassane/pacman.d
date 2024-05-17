@@ -1,4 +1,4 @@
-name: D
+name: pacman-build
 
 on: [push]
 
@@ -24,5 +24,7 @@ jobs:
             sudo apt-get update
             sudo apt-get install libglu1-mesa-dev mesa-common-dev xorg-dev libasound-dev
 
-      - name: (Dub) Build Native
-        run: dub build
+      # - name: (Dub) Build
+      #   run: dub build
+      - name: (Zig) Build
+        run: zig build --summary all
