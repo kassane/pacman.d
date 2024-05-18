@@ -20,26 +20,15 @@ import sapp = sokol.app;
 import log = sokol.log;
 import saudio = sokol.audio;
 import data;
-import rom;
 import game;
 import sound;
-
-
 
 extern (C):
 
 static void init()
 {
-  sg.Desc gfx = {
-    buffer_pool_size: 2,
-    image_pool_size: 3,
-    shader_pool_size: 2,
-    pipeline_pool_size: 2,
-    attachments_pool_size: 1,
-    environment: sglue.environment(),
-    logger: {func: &log.slog_func},
-  };
-  sg.setup(gfx);
+  gfx_init;
+  snd_init;
 
   // add flag: --d-version=DbgSkipIntro
   version (DbgSkipIntro)
@@ -75,7 +64,7 @@ static void frame()
     state.timing.tick++;
 
     // call per-tick sound function (updates sound 'registers' with current sound effect values)
-    // snd_tick();
+    snd_tick();
 
     // check for game state change
     if (now(state.intro.started))
@@ -91,17 +80,17 @@ static void frame()
     switch (state.gamestate)
     {
     case state.gamestate.GAMESTATE_INTRO:
-      // intro_tick();
+      intro_tick();
       break;
     case state.gamestate.GAMESTATE_GAME:
-      // game_tick();
+      game_tick();
       break;
     default:
       break;
     }
   }
-  // gfx_draw();
-  // snd_frame(frame_time_ns);
+  gfx_draw();
+  snd_frame(frame_time_ns);
 }
 
 static void input(const(sapp.Event)* ev)

@@ -1,6 +1,7 @@
 module data;
 
 import sg = sokol.gfx;
+import sound;
 
 extern (C):
 @nogc nothrow:
@@ -301,7 +302,7 @@ struct Sound
 }
 
 // all state is in a single nested struct
-static struct State
+struct State
 {
 
 	GameState gamestate; // the current gamestate (intro => game => intro)
@@ -414,6 +415,7 @@ static struct State
 			sg.Pipeline pip;
 			sg.Attachments attachments;
 		}
+		Offscreen offscreen;
 
 		struct Display
 		{
@@ -421,6 +423,7 @@ static struct State
 			sg.Pipeline pip;
 			sg.Sampler sampler;
 		}
+		Display display;
 
 		// intermediate vertex buffer for tile- and sprite-rendering
 		int num_vertices;
@@ -537,35 +540,35 @@ static const SoundDesc snd_dead = {
 	voice: [false, false, true]
 };
 
-// static const SoundDesc snd_eatdot1 = {
-//     func : snd_func_eatdot1.ptr,
-//     voice : [ false, false, true ]
-// };
+static const SoundDesc snd_eatdot1 = {
+    func : &snd_func_eatdot1,
+    voice : [ false, false, true ]
+};
 
-// static const SoundDesc snd_eatdot2 = {
-//     func : snd_func_eatdot2.ptr,
-//     voice : [ false, false, true ]
-// };
+static const SoundDesc snd_eatdot2 = {
+    func : &snd_func_eatdot2,
+    voice : [ false, false, true ]
+};
 
-// static const SoundDesc snd_eatghost = {
-//     func : snd_func_eatghost.ptr,
-//     voice : [ false, false, true ]
-// };
+static const SoundDesc snd_eatghost = {
+    func : &snd_func_eatghost,
+    voice : [ false, false, true ]
+};
 
-// static const SoundDesc snd_eatfruit = {
-//     func : snd_func_eatfruit.ptr,
-//     voice : [ false, false, true ]
-// };
+static const SoundDesc snd_eatfruit = {
+    func : &snd_func_eatfruit,
+    voice : [ false, false, true ]
+};
 
-// static const SoundDesc snd_weeooh = {
-//     func : snd_func_weeooh,
-//     voice : [ false, true, false ]
-// };
+static const SoundDesc snd_weeooh = {
+    func : &snd_func_weeooh,
+    voice : [ false, true, false ]
+};
 
-// static const SoundDesc snd_frightened = {
-//     func : snd_func_frightened,
-//     voice: [ false, true, false ]
-// };
+static const SoundDesc snd_frightened = {
+    func : &snd_func_frightened,
+    voice: [ false, true, false ]
+};
 
 // deactivate a time trigger
 static void disable(ref Trigger t)

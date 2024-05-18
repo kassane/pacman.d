@@ -6,6 +6,9 @@ import game : state;
 import saudio = sokol.audio;
 import log = sokol.log;
 
+extern(C):
+nothrow @nogc:
+
 static void snd_init()
 {
 	saudio.Desc desc = {logger: {func: &log.slog_func},};
