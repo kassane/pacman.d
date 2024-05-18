@@ -21,6 +21,10 @@ import log = sokol.log;
 import saudio = sokol.audio;
 import data;
 import rom;
+import game;
+import sound;
+
+
 
 extern (C):
 
@@ -54,10 +58,6 @@ static void cleanup()
   saudio.shutdown;
 }
 
-static void start(ref Trigger t) {
-    t.tick = state.timing.tick + 1;
-}
-
 static void frame()
 {
 
@@ -78,12 +78,14 @@ static void frame()
     // snd_tick();
 
     // check for game state change
-    // if (now(state.Intro.started)) {
-    //     state.gamestate = GameState.GAMESTATE_INTRO;
-    // }
-    // if (now(state.Game.started)) {
-    //     state.gamestate = GameState.GAMESTATE_GAME;
-    // }
+    if (now(state.intro.started))
+    {
+      state.gamestate = GameState.GAMESTATE_INTRO;
+    }
+    if (now(state.game.started))
+    {
+      state.gamestate = GameState.GAMESTATE_GAME;
+    }
 
     // call the top-level game state update function
     switch (state.gamestate)
@@ -137,8 +139,6 @@ static void input(const(sapp.Event)* ev)
     }
   }
 }
-
-static State state;
 
 void main() @nogc nothrow
 {

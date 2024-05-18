@@ -312,6 +312,7 @@ static struct State
 		size_t laptime_store; // helper variable to measure frame duration
 		int tick_accum; // helper variable to decouple ticks from frame rate
 	}
+
 	Timing timing;
 
 	// intro state
@@ -319,6 +320,7 @@ static struct State
 	{
 		Trigger started; // tick when intro-state was started
 	}
+
 	Intro intro;
 
 	// game state
@@ -350,6 +352,7 @@ static struct State
 		Pacman pacman;
 		Fruit active_fruit;
 	}
+
 	Game game;
 
 	// the current input state
@@ -363,6 +366,7 @@ static struct State
 		bool esc; // only for debugging (see DBG_ESCACPE)
 		bool anykey;
 	}
+
 	Input input;
 
 	// the audio subsystem is essentially a Namco arcade board sound emulator
@@ -377,6 +381,7 @@ static struct State
 		uint num_samples;
 		float[NUM_SAMPLES] sample_buffer = 0.0f;
 	}
+
 	Audio audio;
 
 	// the gfx subsystem implements a simple tile+sprite renderer
@@ -427,6 +432,7 @@ static struct State
 		// scratch buffer for the color palette
 		uint[256] color_palette;
 	}
+
 	Gfx gfx;
 }
 
@@ -560,3 +566,77 @@ static const SoundDesc snd_dead = {
 //     func : snd_func_frightened,
 //     voice: [ false, true, false ]
 // };
+
+// deactivate a time trigger
+static void disable(ref Trigger t)
+{
+	t.tick = DISABLED_TICKS;
+}
+
+// return a disabled time trigger
+static Trigger disabled_timer()
+{
+	Trigger t = {tick: DISABLED_TICKS};
+	return t;
+}
+
+// shortcut to create an Int2
+static Int2 i2(short x, short y)
+{
+	Int2 res = {x: x, y: y};
+	return res;
+}
+
+// add two Int2
+static Int2 add_i2(Int2 v0, Int2 v1)
+{
+	Int2 res = {x: cast(short)(v0.x + v1.x), y: cast(short)(v0.y + v1.y)};
+	return res;
+}
+
+// subtract two Int2
+static Int2 sub_i2(Int2 v0, Int2 v1)
+{
+	Int2 res = {x: cast(short)(v0.x - v1.x), y: cast(short)(v0.y - v1.y)};
+	return res;
+}
+
+// multiply Int2 with scalar
+static Int2 mul_i2(Int2 v, short s)
+{
+	Int2 z = {x: cast(short)(v.x * s), y: cast(short)(v.y * s)};
+	return z;
+}
+
+// squared-distance between two Int2
+static int squared_distance_i2(Int2 v0, Int2 v1)
+{
+	Int2 d = {x: cast(short)(v1.x - v0.x), y: cast(short)(v1.y - v0.y)};
+	return d.x * d.x + d.y * d.y;
+}
+
+// check if two Int2 are equal
+static bool equal_i2(Int2 v0, Int2 v1)
+{
+	return (v0.x == v1.x) && (v0.y == v1.y);
+}
+
+// check if two Int2 are nearly equal
+static bool nearequal_i2(Int2 v0, Int2 v1, short tolerance)
+{
+	import core.stdc.stdlib : abs;
+
+	return (abs(v1.x - v0.x) <= tolerance) && (abs(v1.y - v0.y) <= tolerance);
+}
+
+// convert an actor pos (origin at center) to sprite pos (origin top left)
+static Int2 actor_to_sprite_pos(Int2 pos)
+{
+	return i2(cast(short)(pos.x - SPRITE_WIDTH / 2), cast(short)(pos.y - SPRITE_HEIGHT / 2));
+}
+
+// compute the distance of a pixel coordinate to the next tile midpoint
+Int2 dist_to_tile_mid(Int2 pos)
+{
+	return i2((TILE_WIDTH / 2) - pos.x % TILE_WIDTH, (TILE_HEIGHT / 2) - pos.y % TILE_HEIGHT);
+}
