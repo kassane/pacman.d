@@ -24,6 +24,7 @@ import game;
 import sound;
 
 extern (C):
+@nogc nothrow:
 
 static void init()
 {
@@ -129,7 +130,7 @@ static void input(const(sapp.Event)* ev)
   }
 }
 
-void main() @nogc nothrow
+void main()
 {
   sapp.Desc runner = {
     window_title: "pacman.d",
