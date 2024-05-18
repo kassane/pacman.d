@@ -31,7 +31,6 @@ static void init()
   gfx_init;
   snd_init;
 
-  // add flag: --d-version=DbgSkipIntro
   version (DbgSkipIntro)
   {
     start(state.game.started);

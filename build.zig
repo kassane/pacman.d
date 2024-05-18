@@ -24,6 +24,21 @@ pub fn build(b: *std.Build) !void {
         // get libsokol
         b.installArtifact(sokol.artifact("sokol"));
     } else {
+        var dflags = std.ArrayList([]const u8).init(b.allocator);
+        defer dflags.deinit();
+
+        // local includedir
+        try dflags.append("-Isource");
+        // sokol-package includedir
+        try dflags.append(b.fmt("-I{s}", .{sokol.path("src").getPath(b)}));
+
+        if (optimize != .Debug)
+            try dflags.append("--d-version=DbgSkipIntro");
+
+        // common flags
+        try dflags.append("-w");
+        try dflags.append("--preview=all");
+
         try buildD(b, .{
             .name = "pacman-d",
             .target = target,
@@ -31,11 +46,7 @@ pub fn build(b: *std.Build) !void {
             .betterC = true, // disable D runtimeGC
             .artifact = sokol.artifact("sokol"),
             .sources = &.{"source/app.d"},
-            .dflags = &.{
-                "-w",
-                "-Isource",
-                b.fmt("-I{s}", .{sokol.path("src").getPath(b)}),
-            },
+            .dflags = dflags.items,
         });
     }
 }

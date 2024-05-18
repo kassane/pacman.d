@@ -8,6 +8,7 @@ import sapp = sokol.app;
 import sg = sokol.gfx;
 import sglue = sokol.glue;
 import log = sokol.log;
+import shd = shader;
 
 extern (C):
 nothrow @nogc:
@@ -1309,273 +1310,32 @@ static void gfx_create_resources()
   };
   state.gfx.display.quad_vbuf = sg.makeBuffer(quad_vbuf);
 
-  // shader sources for all platforms (FIXME: should we use precompiled shader blobs instead?)
-  const(char)* offscreen_vs_src = null;
-  const(char)* offscreen_fs_src = null;
-  const(char)* display_vs_src = null;
-  const(char)* display_fs_src = null;
-  switch (sg.queryBackend)
-  {
-  case sg.Backend.Metal_macos:
-    offscreen_vs_src =
-      "#include <metal_stdlib>\n
-              using namespace metal;\n
-              struct vs_in {\n
-                float4 pos [[attribute(0)]];\n
-                float2 uv [[attribute(1)]];\n
-                float4 data [[attribute(2)]];\n
-              };\n
-              struct vs_out {\n
-                float4 pos [[position]];\n
-                float2 uv;\n
-                float4 data;\n
-              };\n
-              vertex vs_out _main(vs_in in [[stage_in]]) {\n
-                vs_out out;\n
-                out.pos = float4((in.pos.xy - 0.5) * float2(2.0, -2.0), 0.5, 1.0);\n
-                out.uv  = in.uv;
-                out.data = in.data;\n
-                return out;\n
-              }\n";
-    offscreen_fs_src =
-      "#include <metal_stdlib>\n
-              using namespace metal;\n
-              struct ps_in {\n
-                float2 uv;\n
-                float4 data;\n
-              };\n
-              fragment float4 _main(ps_in in [[stage_in]],\n
-                                    texture2d<float> tile_tex [[texture(0)]],\n
-                                    texture2d<float> pal_tex [[texture(1)]],\n
-                                    sampler tile_smp [[sampler(0)]],\n
-                                    sampler pal_smp [[sampler(1)]])\n
-              {\n
-                float color_code = in.data.x;\n
-                float tile_color = tile_tex.sample(tile_smp, in.uv).x;\n
-                float2 pal_uv = float2(color_code * 4 + tile_color, 0);\n
-                float4 color = pal_tex.sample(pal_smp, pal_uv) * float4(1, 1, 1, in.data.y);\n
-                return color;\n
-              }\n";
-    display_vs_src =
-      "#include <metal_stdlib>\n
-              using namespace metal;\n
-              struct vs_in {\n
-                float4 pos [[attribute(0)]];\n
-              };\n
-              struct vs_out {\n
-                float4 pos [[position]];\n
-                float2 uv;\n
-              };\n
-              vertex vs_out _main(vs_in in[[stage_in]]) {\n
-                vs_out out;\n
-                out.pos = float4((in.pos.xy - 0.5) * float2(2.0, -2.0), 0.0, 1.0);\n
-                out.uv = in.pos.xy;\n
-                return out;\n
-              }\n";
-    display_fs_src =
-      "#include <metal_stdlib>\n
-              using namespace metal;\n
-              struct ps_in {\n
-                float2 uv;\n
-              };\n
-              fragment float4 _main(ps_in in [[stage_in]],\n
-                                    texture2d<float> tex [[texture(0)]],\n
-                                    sampler smp [[sampler(0)]])\n
-              {\n
-                return tex.sample(smp, in.uv);\n
-              }\n";
-    break;
-  case sg.Backend.D3d11:
-    offscreen_vs_src =
-      "struct vs_in {\n
-                float4 pos: POSITION;\n
-                float2 uv: TEXCOORD0;\n
-                float4 data: TEXCOORD1;\n
-              };\n
-              struct vs_out {\n
-                float2 uv: UV;\n
-                float4 data: DATA;\n
-                float4 pos: SV_Position;\n
-              };\n
-              vs_out main(vs_in inp) {\n
-                vs_out outp;
-                outp.pos = float4(inp.pos.xy * float2(2.0, -2.0) + float2(-1.0, 1.0), 0.0, 1.0);\n
-                outp.uv  = inp.uv;
-                outp.data = inp.data;\n
-                return outp;\n
-              }\n";
-    offscreen_fs_src =
-      "Texture2D<float4> tile_tex: register(t0);\n
-              Texture2D<float4> pal_tex: register(t1);\n
-              sampler tile_smp: register(s0);\n
-              sampler pal_smp: register(s1);\n
-              float4 main(float2 uv: UV, float4 data: DATA): SV_Target0 {\n
-                float color_code = data.x;\n
-                float tile_color = tile_tex.Sample(tile_smp, uv).x;\n
-                float2 pal_uv = float2(color_code * 4 + tile_color, 0);\n
-                float4 color = pal_tex.Sample(pal_smp, pal_uv) * float4(1, 1, 1, data.y);\n
-                return color;\n
-              }\n";
-    display_vs_src =
-      "struct vs_out {\n
-                float2 uv: UV;\n
-                float4 pos: SV_Position;\n
-              };\n
-              vs_out main(float4 pos: POSITION) {\n
-                vs_out outp;\n
-                outp.pos = float4((pos.xy - 0.5) * float2(2.0, -2.0), 0.0, 1.0);\n
-                outp.uv = pos.xy;\n
-                return outp;\n
-              }\n";
-    display_fs_src =
-      "Texture2D<float4> tex: register(t0);\n
-              sampler smp: register(s0);\n
-              float4 main(float2 uv: UV): SV_Target0 {\n
-                return tex.Sample(smp, uv);\n
-              }\n";
-    break;
-  case sg.Backend.Glcore:
-    offscreen_vs_src =
-      "#version 410\n
-              layout(location=0) in vec4 pos;\n
-              layout(location=1) in vec2 uv_in;\n
-              layout(location=2) in vec4 data_in;\n
-              out vec2 uv;\n
-              out vec4 data;\n
-              void main() {\n
-                gl_Position = vec4((pos.xy - 0.5) * vec2(2.0, -2.0), 0.5, 1.0);\n
-                uv  = uv_in;
-                data = data_in;\n
-              }\n";
-    offscreen_fs_src =
-      "#version 410\n
-              uniform sampler2D tile_tex;\n
-              uniform sampler2D pal_tex;\n
-              in vec2 uv;\n
-              in vec4 data;\n
-              out vec4 frag_color;\n
-              void main() {\n
-                float color_code = data.x;\n
-                float tile_color = texture(tile_tex, uv).x;\n
-                vec2 pal_uv = vec2(color_code * 4 + tile_color, 0);\n
-                frag_color = texture(pal_tex, pal_uv) * vec4(1, 1, 1, data.y);\n
-              }\n";
-    display_vs_src =
-      "#version 410\n
-              layout(location=0) in vec4 pos;\n
-              out vec2 uv;\n
-              void main() {\n
-                gl_Position = vec4((pos.xy - 0.5) * 2.0, 0.0, 1.0);\n
-                uv = pos.xy;\n
-              }\n";
-    display_fs_src =
-      "#version 410\n
-              uniform sampler2D tex;\n
-              in vec2 uv;\n
-              out vec4 frag_color;\n
-              void main() {\n
-                frag_color = texture(tex, uv);\n
-              }\n";
-    break;
-  case sg.Backend.Gles3:
-    offscreen_vs_src =
-      "attribute vec4 pos;\n
-              attribute vec2 uv_in;\n
-              attribute vec4 data_in;\n
-              varying vec2 uv;\n
-              varying vec4 data;\n
-              void main() {\n
-                gl_Position = vec4((pos.xy - 0.5) * vec2(2.0, -2.0), 0.5, 1.0);\n
-                uv  = uv_in;
-                data = data_in;\n
-              }\n";
-    offscreen_fs_src =
-      "precision mediump float;\n
-              uniform sampler2D tile_tex;\n
-              uniform sampler2D pal_tex;\n
-              varying vec2 uv;\n
-              varying vec4 data;\n
-              void main() {\n
-                float color_code = data.x;\n
-                float tile_color = texture2D(tile_tex, uv).x;\n
-                vec2 pal_uv = vec2(color_code * 4.0 + tile_color, 0.0);\n
-                gl_FragColor = texture2D(pal_tex, pal_uv) * vec4(1.0, 1.0, 1.0, data.y);\n
-              }\n";
-    display_vs_src =
-      "attribute vec4 pos;\n
-              varying vec2 uv;\n
-              void main() {\n
-                gl_Position = vec4((pos.xy - 0.5) * 2.0, 0.0, 1.0);\n
-                uv = pos.xy;\n
-              }\n";
-    display_fs_src =
-      "precision mediump float;\n
-              uniform sampler2D tex;\n
-              varying vec2 uv;\n
-              void main() {\n
-                gl_FragColor = texture2D(tex, uv);\n
-              }\n";
-    break;
-  default:
-    assert(false);
-  }
-
   // create pipeline and shader object for rendering into offscreen render target
-  sg.ShaderDesc offscreen_shader = {
-    attrs: [
-      {name: "pos", sem_name: "POSITION"},
-      {name: "uv_in", sem_name: "TEXCOORD", sem_index: 0},
-      {name: "data_in", sem_name: "TEXCOORD", sem_index: 1}
-    ],
-    vs: {source: offscreen_vs_src},
-    fs: {
-      images: [{used: true}, {used: true}],
-      samplers: [{used: true}, {used: true}],
-      image_sampler_pairs: [
-        {used: true, image_slot: 0, sampler_slot: 0, glsl_name: "tile_tex"},
-        {used: true, image_slot: 1, sampler_slot: 1, glsl_name: "pal_tex"}
-      ],
-      source: offscreen_fs_src
-    }
+  sg.PipelineDesc pip_desc = {
+    shader: sg.makeShader(shd.offscreenShaderDesc(sg.queryBackend)),
+    // layout: {
+    //   attrs: [
+    //     {format: sg.VertexFormat.Float2},
+    //     {format: sg.VertexFormat.Float2},
+    //     {format: sg.VertexFormat.Ubyte4n}
+    //   ],
+    // },
+    depth: {pixel_format: sg.PixelFormat.None},// colors: [
+    //   {
+    //     pixel_format: sg.PixelFormat.Rgba8,
+    //     blend: {
+    //       enabled: true,
+    //       src_factor_rgb: sg.BlendFactor.Src_alpha,
+    //       dst_factor_rgb: sg.BlendFactor.One_minus_blend_alpha,
+    //     }
+    //   }
+    // ]
+  
   };
-  sg.PipelineDesc offscren_pip = {
-    shader: sg.makeShader(offscreen_shader),
-    layout: {
-      attrs: [
-        {format: sg.VertexFormat.Float2},
-        {format: sg.VertexFormat.Float2},
-        {format: sg.VertexFormat.Ubyte4n}
-      ],
-    },
-    depth: {pixel_format: sg.PixelFormat.None},
-    colors: [
-      {
-        pixel_format: sg.PixelFormat.Rgba8,
-        blend: {
-          enabled: true,
-          src_factor_rgb: sg.BlendFactor.Src_alpha,
-          dst_factor_rgb: sg.BlendFactor.One_minus_blend_alpha,
-        }
-      }
-    ]
-  };
-  state.gfx.offscreen.pip = sg.makePipeline(offscren_pip);
+  state.gfx.offscreen.pip = sg.makePipeline(pip_desc);
 
-  // create pipeline and shader for rendering into display
-  sg.ShaderDesc display_shader = {
-    attrs: [{name: "pos", sem_name: "POSITION"}],
-    vs: {source: display_vs_src},
-    fs: {
-      images: [{used: true}],
-      samplers: [{used: true}],
-      image_sampler_pairs: [
-        {used: true, image_slot: 0, sampler_slot: 0, glsl_name: "tex"}
-      ],
-      source: display_fs_src
-    }
-  };
   sg.PipelineDesc display_pip = {
-    shader: sg.makeShader(display_shader),
+    shader: sg.makeShader(shd.displayShaderDesc(sg.queryBackend)),
     layout: {attrs: [{format: sg.VertexFormat.Float2}]},
     primitive_type: sg.PrimitiveType.Triangle_strip
   };
