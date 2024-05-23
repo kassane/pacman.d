@@ -32,8 +32,13 @@ pub fn build(b: *std.Build) !void {
         // sokol-package includedir
         try dflags.append(b.fmt("-I{s}", .{sokol.path("src").getPath(b)}));
 
-        if (optimize != .Debug)
+        if (optimize == .Debug) {
             try dflags.append("--d-version=DbgSkipIntro");
+            try dflags.append("--d-version=DbgSkipPrelude");
+            try dflags.append("--d-version=DbgEscape");
+            try dflags.append("--d-version=DbgMarkers");
+            try dflags.append("--d-version=DbgGodMode");
+        }
 
         // common flags
         try dflags.append("-w");

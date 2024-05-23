@@ -14,7 +14,7 @@ extern (C):
 nothrow @nogc:
 
 // xorshift random number generator
-static uint xorshift32()
+uint xorshift32()
 {
   uint x = state.game.xorshift;
   x ^= x << 13;
@@ -24,7 +24,7 @@ static uint xorshift32()
 }
 
 // get level spec for a game round
-static LevelSpec levelspec(int round)
+LevelSpec levelspec(int round)
 {
   assert(round >= 0);
   if (round >= MAX_LEVELSPEC)
@@ -35,19 +35,19 @@ static LevelSpec levelspec(int round)
 }
 
 // set time trigger to the next game tick
-static void start(ref Trigger t)
+void start(scope ref Trigger t)
 {
   t.tick = state.timing.tick + 1;
 }
 
 // set time trigger to a future tick
-static void start_after(ref Trigger t, uint ticks)
+void start_after(scope ref Trigger t, uint ticks)
 {
   t.tick = state.timing.tick + ticks;
 }
 
 // check if a time trigger is triggered
-static bool now(ref Trigger t)
+bool now(scope ref Trigger t)
 {
   return t.tick == state.timing.tick;
 }
@@ -55,7 +55,7 @@ static bool now(ref Trigger t)
 // set a debug marker
 version (DbgMarkers)
 {
-  static void dbg_marker(int index, Int2 tile_pos, ubyte tile_code, ubyte color_code)
+  void dbg_marker(int index, Int2 tile_pos, ubyte tile_code, ubyte color_code)
   {
     assert((index >= 0) && (index < NUM_DEBUG_MARKERS));
     state.gfx.debug_marker[index].enabled = true;
@@ -65,67 +65,109 @@ version (DbgMarkers)
   }
 }
 
-// dfmt off
 // initialize the playfield tiles
-static void game_init_playfield() {
-    vid_color_playfield(COLOR_DOT);
-    // decode the playfield from an ASCII map into tiles codes
-    static const (char)* tiles =
-       //0123456789012345678901234567
-        "0UUUUUUUUUUUU45UUUUUUUUUUUU1
-        L............rl............R
-        L.ebbf.ebbbf.rl.ebbbf.ebbf.R
-        LPr  l.r   l.rl.r   l.r  lPR
-        L.guuh.guuuh.gh.guuuh.guuh.R
-        L..........................R
-        L.ebbf.ef.ebbbbbbf.ef.ebbf.R
-        L.guuh.rl.guuyxuuh.rl.guuh.R
-        L......rl....rl....rl......R
-        2BBBBf.rzbbf rl ebbwl.eBBBB3
-             L.rxuuh gh guuyl.R     
-             L.rl          rl.R     
-             L.rl mjs--tjn rl.R     
-        UUUUUh.gh i      q gh.gUUUUU
-              .   i      q   .      
-        BBBBBf.ef i      q ef.eBBBBB
-             L.rl okkkkkkp rl.R     
-             L.rl          rl.R     
-             L.rl ebbbbbbf rl.R     
-        0UUUUh.gh guuyxuuh gh.gUUUU1
-        L............rl............R
-        L.ebbf.ebbbf.rl.ebbbf.ebbf.R
-        L.guyl.guuuh.gh.guuuh.rxuh.R
-        LP..rl.......  .......rl..PR
-        6bf.rl.ef.ebbbbbbf.ef.rl.eb8
-        7uh.gh.rl.guuyxuuh.rl.gh.gu9
-        L......rl....rl....rl......R
-        L.ebbbbwzbbf.rl.ebbwzbbbbf.R
-        L.guuuuuuuuh.gh.guuuuuuuuh.R
-        L..........................R
-        2BBBBBBBBBBBBBBBBBBBBBBBBBB3"; // 33
-       //0123456789012345678901234567
-    ubyte[128] t = void;
-    for (int i = 0; i < 128; i++) { t[i]=TILE_DOT; }
-    t[' ']=0x40; t['0']=0xD1; t['1']=0xD0; t['2']=0xD5; t['3']=0xD4; t['4']=0xFB;
-    t['5']=0xFA; t['6']=0xD7; t['7']=0xD9; t['8']=0xD6; t['9']=0xD8; t['U']=0xDB;
-    t['L']=0xD3; t['R']=0xD2; t['B']=0xDC; t['b']=0xDF; t['e']=0xE7; t['f']=0xE6;
-    t['g']=0xEB; t['h']=0xEA; t['l']=0xE8; t['r']=0xE9; t['u']=0xE5; t['w']=0xF5;
-    t['x']=0xF2; t['y']=0xF3; t['z']=0xF4; t['m']=0xED; t['n']=0xEC; t['o']=0xEF;
-    t['p']=0xEE; t['j']=0xDD; t['i']=0xD2; t['k']=0xDB; t['q']=0xD3; t['s']=0xF1;
-    t['t']=0xF0; t['-']=TILE_DOOR; t['P']=TILE_PILL;
-    for (int y = 3, i = 0; y <= 33; y++) {
-        for (int x = 0; x < 28; x++, i++) {
-            state.gfx.video_ram[y][x] = t[tiles[i] & 127];
-        }
+void game_init_playfield()
+{
+  vid_color_playfield(COLOR_DOT);
+
+  // decode the playfield from an ASCII map into tiles codes
+  immutable tiles =
+    "0UUUUUUUUUUUU45UUUUUUUUUUUU1" ~
+    "L............rl............R" ~
+    "L.ebbf.ebbbf.rl.ebbbf.ebbf.R" ~
+    "LPr  l.r   l.rl.r   l.r  lPR" ~
+    "L.guuh.guuuh.gh.guuuh.guuh.R" ~
+    "L..........................R" ~
+    "L.ebbf.ef.ebbbbbbf.ef.ebbf.R" ~
+    "L.guuh.rl.guuyxuuh.rl.guuh.R" ~
+    "L......rl....rl....rl......R" ~
+    "2BBBBf.rzbbf rl ebbwl.eBBBB3" ~
+    "     L.rxuuh gh guuyl.R     " ~
+    "     L.rl          rl.R     " ~
+    "     L.rl mjs--tjn rl.R     " ~
+    "UUUUUh.gh i      q gh.gUUUUU" ~
+    "      .   i      q   .      " ~
+    "BBBBBf.ef i      q ef.eBBBBB" ~
+    "     L.rl okkkkkkp rl.R     " ~
+    "     L.rl          rl.R     " ~
+    "     L.rl ebbbbbbf rl.R     " ~
+    "0UUUUh.gh guuyxuuh gh.gUUUU1" ~
+    "L............rl............R" ~
+    "L.ebbf.ebbbf.rl.ebbbf.ebbf.R" ~
+    "L.guyl.guuuh.gh.guuuh.rxuh.R" ~
+    "LP..rl.......  .......rl..PR" ~
+    "6bf.rl.ef.ebbbbbbf.ef.rl.eb8" ~
+    "7uh.gh.rl.guuyxuuh.rl.gh.gu9" ~
+    "L......rl....rl....rl......R" ~
+    "L.ebbbbwzbbf.rl.ebbwzbbbbf.R" ~
+    "L.guuuuuuuuh.gh.guuuuuuuuh.R" ~
+    "L..........................R" ~
+    "2BBBBBBBBBBBBBBBBBBBBBBBBBB3";
+
+  // ASCII to tile mapping
+  ubyte[128] t;
+  foreach (ref ubyte tile; t)
+  {
+    tile = TILE_DOT;
+  }
+  t[' '] = 0x40;
+  t['0'] = 0xD1;
+  t['1'] = 0xD0;
+  t['2'] = 0xD5;
+  t['3'] = 0xD4;
+  t['4'] = 0xFB;
+  t['5'] = 0xFA;
+  t['6'] = 0xD7;
+  t['7'] = 0xD9;
+  t['8'] = 0xD6;
+  t['9'] = 0xD8;
+  t['U'] = 0xDB;
+  t['L'] = 0xD3;
+  t['R'] = 0xD2;
+  t['B'] = 0xDC;
+  t['b'] = 0xDF;
+  t['e'] = 0xE7;
+  t['f'] = 0xE6;
+  t['g'] = 0xEB;
+  t['h'] = 0xEA;
+  t['l'] = 0xE8;
+  t['r'] = 0xE9;
+  t['u'] = 0xE5;
+  t['w'] = 0xF5;
+  t['x'] = 0xF2;
+  t['y'] = 0xF3;
+  t['z'] = 0xF4;
+  t['m'] = 0xED;
+  t['n'] = 0xEC;
+  t['o'] = 0xEF;
+  t['p'] = 0xEE;
+  t['j'] = 0xDD;
+  t['i'] = 0xD2;
+  t['k'] = 0xDB;
+  t['q'] = 0xD3;
+  t['s'] = 0xF1;
+  t['t'] = 0xF0;
+  t['-'] = TILE_DOOR;
+  t['P'] = TILE_PILL;
+
+  // Initialize playfield tiles
+  int index = 0;
+  for (int y = 3; y <= 33; y++)
+  {
+    for (int x = 0; x < 28; x++)
+    {
+      state.gfx.video_ram[y][x] = t[cast(ubyte) tiles[index] & 127];
+      index++;
     }
-    // ghost house gate colors
-    vid_color(i2(13,15), 0x18);
-    vid_color(i2(14,15), 0x18);
+  }
+
+  // Ghost house gate colors
+  vid_color(i2(13, 15), 0x18);
+  vid_color(i2(14, 15), 0x18);
 }
-// dfmt on
 
 // disable all game loop timers
-static void game_disable_timers()
+void game_disable_timers()
 {
   disable(state.game.round_won);
   disable(state.game.game_over);
@@ -139,7 +181,7 @@ static void game_disable_timers()
 }
 
 // one-time init at start of game state
-static void game_init()
+void game_init()
 {
   input_enable();
   game_disable_timers();
@@ -160,7 +202,7 @@ static void game_init()
 }
 
 // setup state at start of a game round
-static void game_round_init()
+void game_round_init()
 {
   spr_clear();
 
@@ -287,7 +329,7 @@ static void game_round_init()
 }
 
 // update dynamic background tiles
-static void game_update_tiles()
+void game_update_tiles()
 {
   // print score and hiscore
   vid_color_score(i2(6, 1), COLOR_DEFAULT, state.game.score);
@@ -297,7 +339,7 @@ static void game_update_tiles()
   }
 
   // update the energizer pill colors (blinking/non-blinking)
-  static const Int2[NUM_PILLS] pill_pos = [{1, 6}, {26, 6}, {1, 26}, {26, 26}];
+  const Int2[NUM_PILLS] pill_pos = [{1, 6}, {26, 6}, {1, 26}, {26, 26}];
   for (int i = 0; i < NUM_PILLS; i++)
   {
     if (state.game.freeze)
@@ -355,7 +397,7 @@ static void game_update_tiles()
 }
 
 // this function takes care of updating all sprite images during gameplay
-static void game_update_sprites()
+void game_update_sprites()
 {
   // update Pacman sprite
   {
@@ -467,7 +509,7 @@ static void game_update_sprites()
 
 // return true if Pacman should move in this tick, when eating dots, Pacman
 // is slightly slower than ghosts, otherwise slightly faster
-static bool game_pacman_should_move()
+bool game_pacman_should_move()
 {
   if (now(state.game.dot_eaten))
   {
@@ -488,7 +530,7 @@ static bool game_pacman_should_move()
 // return number of pixels a ghost should move this tick, this can't be a simple
 // move/don't move boolean return value, because ghosts in eye state move faster
 // than one pixel per tick
-static int game_ghost_speed(const Ghost* ghost)
+int game_ghost_speed(const Ghost* ghost)
 {
   assert(ghost);
   switch (ghost.state)
@@ -519,7 +561,7 @@ static int game_ghost_speed(const Ghost* ghost)
 }
 
 // return the current global scatter or chase phase
-static GhostState game_scatter_chase_phase()
+GhostState game_scatter_chase_phase()
 {
   uint t = since(state.game.round_started);
   if (t < 7 * 60)
@@ -543,7 +585,7 @@ static GhostState game_scatter_chase_phase()
 // this function takes care of switching ghosts into a new state, this is one
 // of two important functions of the ghost AI (the other being the target selection
 // function below)
-static void game_update_ghost_state(Ghost* ghost)
+void game_update_ghost_state(Ghost* ghost)
 {
   assert(ghost);
   GhostState new_state = ghost.state;
@@ -652,7 +694,7 @@ static void game_update_ghost_state(Ghost* ghost)
 
 // update the ghost's target position, this is the other important function
 // of the ghost's AI
-static void game_update_ghost_target(Ghost* ghost)
+void game_update_ghost_target(Ghost* ghost)
 {
   assert(ghost);
   Int2 pos = ghost.target_pos;
@@ -729,7 +771,7 @@ static void game_update_ghost_target(Ghost* ghost)
 // compute the next ghost direction, return true if resulting movement
 // should always happen regardless of current ghost position or blocking
 // tiles (this special case is used for movement inside the ghost house)
-static bool game_update_ghost_dir(Ghost* ghost)
+bool game_update_ghost_dir(Ghost* ghost)
 {
   assert(ghost);
   // inside ghost-house, just move up and down
@@ -864,7 +906,7 @@ static bool game_update_ghost_dir(Ghost* ghost)
     If pacman doesn't eat dots for a while, the next ghost is forced out of the
     house using a timer.
 */
-static void game_update_ghosthouse_dot_counters()
+void game_update_ghosthouse_dot_counters()
 {
   // if the new round was started because Pacman lost a life, use the global
   // dot counter (this mode will be deactivated again after all ghosts left the
@@ -891,7 +933,7 @@ static void game_update_ghosthouse_dot_counters()
 // called when a dot or pill has been eaten, checks if a round has been won
 // (all dots and pills eaten), whether to show the bonus fruit, and finally
 // plays the dot-eaten sound effect
-static void game_update_dots_eaten()
+void game_update_dots_eaten()
 {
   state.game.num_dots_eaten++;
   if (state.game.num_dots_eaten == NUM_DOTS)
@@ -918,7 +960,7 @@ static void game_update_dots_eaten()
 }
 
 // the central Pacman and ghost behaviour function, called once per game tick
-static void game_update_actors()
+void game_update_actors()
 {
   // Pacman "AI"
   if (game_pacman_should_move())
@@ -999,20 +1041,21 @@ static void game_update_actors()
             ghost.state == GhostState.GHOSTSTATE_SCATTER))
         {
           // otherwise, ghost eats Pacman, Pacman loses a life
-          // #if !DBG_GODMODE
-          snd_clear();
-          start(state.game.pacman_eaten);
-          state.game.freeze |= FreezeType.FREEZETYPE_DEAD;
-          // if Pacman has any lives left start a new round, otherwise start the game-over sequence
-          if (state.game.num_lives > 0)
+          version (DbgGodMode)
           {
-            start_after(state.game.ready_started, PACMAN_EATEN_TICKS + PACMAN_DEATH_TICKS);
+            snd_clear();
+            start(state.game.pacman_eaten);
+            state.game.freeze |= FreezeType.FREEZETYPE_DEAD;
+            // if Pacman has any lives left start a new round, otherwise start the game-over sequence
+            if (state.game.num_lives > 0)
+            {
+              start_after(state.game.ready_started, PACMAN_EATEN_TICKS + PACMAN_DEATH_TICKS);
+            }
+            else
+            {
+              start_after(state.game.game_over, PACMAN_EATEN_TICKS + PACMAN_DEATH_TICKS);
+            }
           }
-          else
-          {
-            start_after(state.game.game_over, PACMAN_EATEN_TICKS + PACMAN_DEATH_TICKS);
-          }
-          // #endif
         }
       }
     }
@@ -1043,10 +1086,10 @@ static void game_update_actors()
 }
 
 // the central game tick function, called at 60 Hz
-static void game_tick()
+void game_tick()
 {
   // debug: skip prelude
-  version (DBG_SKIP_PRELUDE)
+  version (DbgSkipPrelude)
   {
     const int prelude_ticks_per_sec = 1;
   }
@@ -1139,56 +1182,61 @@ static void game_tick()
     start_after(state.intro.started, GAMEOVER_TICKS + FADE_TICKS);
   }
 
-  // #if DBG_ESCAPE
-  //     if (state.input.esc) {
-  //         input_disable();
-  //         start(&state.gfx.fadeout);
-  //         start_after(&state.intro.started, FADE_TICKS);
-  //     }
-  // #endif
+  version (DbgEscape)
+  {
+    if (state.input.esc)
+    {
+      input_disable();
+      start(state.gfx.fadeout);
+      start_after(state.intro.started, FADE_TICKS);
+    }
+  }
 
   version (DbgMarkers)
   {
     // visualize current ghost targets
-    for (int i = 0; i < NUM_GHOSTS; i++)
+    for (int i = 0; i < GhostType.NUM_GHOSTS; i++)
     {
-      const ghost_t* ghost = &state.game.ghost[i];
+      const Ghost* ghost = &state.game.ghost[i];
       ubyte tile = 'X';
       switch (ghost.state)
       {
-      case GHOSTSTATE_NONE:
+      case GhostState.GHOSTSTATE_NONE:
         tile = 'N';
         break;
-      case GHOSTSTATE_CHASE:
+      case GhostState.GHOSTSTATE_CHASE:
         tile = 'C';
         break;
-      case GHOSTSTATE_SCATTER:
+      case GhostState.GHOSTSTATE_SCATTER:
         tile = 'S';
         break;
-      case GHOSTSTATE_FRIGHTENED:
+      case GhostState.GHOSTSTATE_FRIGHTENED:
         tile = 'F';
         break;
-      case GHOSTSTATE_EYES:
+      case GhostState.GHOSTSTATE_EYES:
         tile = 'E';
         break;
-      case GHOSTSTATE_HOUSE:
+      case GhostState.GHOSTSTATE_HOUSE:
         tile = 'H';
         break;
-      case GHOSTSTATE_LEAVEHOUSE:
+      case GhostState.GHOSTSTATE_LEAVEHOUSE:
         tile = 'L';
         break;
-      case GHOSTSTATE_ENTERHOUSE:
+      case GhostState.GHOSTSTATE_ENTERHOUSE:
         tile = 'E';
         break;
+      default:
+        break;
       }
-      dbg_marker(i, state.game.ghost[i].target_pos, tile, COLOR_BLINKY + 2 * i);
+      dbg_marker(cast(GhostType) i, state.game.ghost[i].target_pos, tile, cast(ubyte)(
+          COLOR_BLINKY + 2 * i));
     }
   }
 }
 
 /*== INTRO GAMESTATE CODE ====================================================*/
 
-static void intro_tick()
+void intro_tick()
 {
 
   // on intro-state enter, enable input and draw any initial text
@@ -1281,7 +1329,7 @@ static void intro_tick()
 /*== GFX SUBSYSTEM ===========================================================*/
 
 /* create all sokol-gfx resources */
-static void gfx_create_resources()
+void gfx_create_resources()
 {
   // pass action for clearing the background to black
   sg.PassAction pass_action = {
@@ -1312,24 +1360,24 @@ static void gfx_create_resources()
 
   // create pipeline and shader object for rendering into offscreen render target
   sg.PipelineDesc pip_desc = {
-    shader: sg.makeShader(shd.offscreenShaderDesc(sg.queryBackend)),
-    // layout: {
-    //   attrs: [
-    //     {format: sg.VertexFormat.Float2},
-    //     {format: sg.VertexFormat.Float2},
-    //     {format: sg.VertexFormat.Ubyte4n}
-    //   ],
-    // },
-    depth: {pixel_format: sg.PixelFormat.None},// colors: [
-    //   {
-    //     pixel_format: sg.PixelFormat.Rgba8,
-    //     blend: {
-    //       enabled: true,
-    //       src_factor_rgb: sg.BlendFactor.Src_alpha,
-    //       dst_factor_rgb: sg.BlendFactor.One_minus_blend_alpha,
-    //     }
-    //   }
-    // ]
+    shader: sg.makeShader(shd.offscreenShaderDesc(sg.queryBackend)), // layout: {
+      //   attrs: [
+      //     {format: sg.VertexFormat.Float2},
+      //     {format: sg.VertexFormat.Float2},
+      //     {format: sg.VertexFormat.Ubyte4n}
+      //   ],
+      // },
+    depth: {pixel_format: sg.PixelFormat.None}, // colors: [
+      //   {
+      //     pixel_format: sg.PixelFormat.Rgba8,
+      //     blend: {
+      //       enabled: true,
+      //       src_factor_rgb: sg.BlendFactor.Src_alpha,
+      //       dst_factor_rgb: sg.BlendFactor.One_minus_blend_alpha,
+      //     }
+      //   }
+      // ]
+
   
   };
   state.gfx.offscreen.pip = sg.makePipeline(pip_desc);
@@ -1416,7 +1464,7 @@ static void gfx_create_resources()
     Tile decoding only happens once at startup from ROM dumps into a texture.
 */
 pragma(inline, true)
-static void gfx_decode_tile_8x4(
+void gfx_decode_tile_8x4(
   uint tex_x,
   uint tex_y,
   const(char)* tile_base,
@@ -1439,7 +1487,7 @@ static void gfx_decode_tile_8x4(
 
 // decode an 8x8 tile into the tile texture's upper half
 pragma(inline, true)
-static void gfx_decode_tile(uint tile_code)
+void gfx_decode_tile(uint tile_code)
 {
   uint x = tile_code * TILE_WIDTH;
   uint y0 = 0;
@@ -1450,7 +1498,7 @@ static void gfx_decode_tile(uint tile_code)
 
 // decode a 16x16 sprite into the tile texture's lower half
 pragma(inline, true)
-static void gfx_decode_sprite(ubyte sprite_code)
+void gfx_decode_sprite(ubyte sprite_code)
 {
   uint x0 = sprite_code * SPRITE_WIDTH;
   uint x1 = x0 + TILE_WIDTH;
@@ -1469,7 +1517,7 @@ static void gfx_decode_sprite(ubyte sprite_code)
 }
 
 // decode the Pacman tile- and sprite-ROM-dumps into a 8bpp texture
-static void gfx_decode_tiles()
+void gfx_decode_tiles()
 {
   for (uint tile_code = 0; tile_code < 256; tile_code++)
   {
@@ -1494,7 +1542,7 @@ static void gfx_decode_tiles()
     palette which indirects into a 32-entry hardware-color palette
     (of which only 16 entries are used on the Pacman hardware)
 */
-static void gfx_decode_color_palette()
+void gfx_decode_color_palette()
 {
   uint[32] hw_colors = void;
   for (int i = 0; i < 32; i++)
@@ -1524,7 +1572,7 @@ static void gfx_decode_color_palette()
   }
 }
 
-static void gfx_init()
+void gfx_init()
 {
   sg.Desc gfx = {
     buffer_pool_size: 2,
@@ -1545,12 +1593,12 @@ static void gfx_init()
   gfx_create_resources();
 }
 
-static void gfx_shutdown()
+void gfx_shutdown()
 {
   sg.shutdown;
 }
 
-static void gfx_add_vertex(float x, float y, float u, float v, ubyte color_code, ubyte opacity)
+void gfx_add_vertex(float x, float y, float u, float v, ubyte color_code, ubyte opacity)
 {
   assert(state.gfx.num_vertices < MAX_VERTICES);
   Vertex* vtx = &state.gfx.vertices[state.gfx.num_vertices++];
@@ -1561,7 +1609,7 @@ static void gfx_add_vertex(float x, float y, float u, float v, ubyte color_code,
   vtx.attr = (opacity << 8) | color_code;
 }
 
-static void gfx_add_tile_vertices(uint tx, uint ty, ubyte tile_code, ubyte color_code)
+void gfx_add_tile_vertices(uint tx, uint ty, ubyte tile_code, ubyte color_code)
 {
   assert((tx < DISPLAY_TILES_X) && (ty < DISPLAY_TILES_Y));
   const float dx = 1.0f / DISPLAY_TILES_X;
@@ -1593,7 +1641,7 @@ static void gfx_add_tile_vertices(uint tx, uint ty, ubyte tile_code, ubyte color
   gfx_add_vertex(x0, y1, u0, v1, color_code, 0xFF);
 }
 
-static void gfx_add_playfield_vertices()
+void gfx_add_playfield_vertices()
 {
   for (uint ty = 0; ty < DISPLAY_TILES_Y; ty++)
   {
@@ -1606,7 +1654,7 @@ static void gfx_add_playfield_vertices()
   }
 }
 
-static void gfx_add_debugmarker_vertices()
+void gfx_add_debugmarker_vertices()
 {
   for (int i = 0; i < NUM_DEBUG_MARKERS; i++)
   {
@@ -1618,7 +1666,7 @@ static void gfx_add_debugmarker_vertices()
   }
 }
 
-static void gfx_add_sprite_vertices()
+void gfx_add_sprite_vertices()
 {
   const float dx = 1.0f / DISPLAY_PIXELS_X;
   const float dy = 1.0f / DISPLAY_PIXELS_Y;
@@ -1665,7 +1713,7 @@ static void gfx_add_sprite_vertices()
   }
 }
 
-static void gfx_add_fade_vertices()
+void gfx_add_fade_vertices()
 {
   // sprite tile 64 is a special 16x16 opaque block
   const float du = cast(float) SPRITE_WIDTH / TILE_TEXTURE_WIDTH;
@@ -1685,7 +1733,7 @@ static void gfx_add_fade_vertices()
 }
 
 // adjust the viewport so that the aspect ratio is always correct
-static void gfx_adjust_viewport(int canvas_width, int canvas_height)
+void gfx_adjust_viewport(int canvas_width, int canvas_height)
 {
   const float canvas_aspect = cast(float) canvas_width / canvas_height;
   const float playfield_aspect = cast(float) DISPLAY_TILES_X / DISPLAY_TILES_Y;
@@ -1709,7 +1757,7 @@ static void gfx_adjust_viewport(int canvas_width, int canvas_height)
 }
 
 // handle fadein/fadeout
-static void gfx_fade()
+void gfx_fade()
 {
   if (between(state.gfx.fadein, 0, FADE_TICKS))
   {
@@ -1731,7 +1779,7 @@ static void gfx_fade()
   }
 }
 
-static void gfx_draw()
+void gfx_draw()
 {
   // handle fade in/out
   gfx_fade();
@@ -1791,17 +1839,17 @@ static void gfx_draw()
   sg.commit;
 }
 
-static State state;
+__gshared State state;
 
 // clear tile and color buffer
-static void vid_clear(ubyte tile_code, ubyte color_code)
+void vid_clear(ubyte tile_code, ubyte color_code)
 {
   memset(&state.gfx.video_ram, tile_code, state.gfx.video_ram.sizeof);
   memset(&state.gfx.color_ram, color_code, state.gfx.color_ram.sizeof);
 }
 
 // clear the playfield's rectangle in the color buffer
-static void vid_color_playfield(ubyte color_code)
+void vid_color_playfield(ubyte color_code)
 {
   for (int y = 3; y < DISPLAY_TILES_Y - 2; y++)
   {
@@ -1813,28 +1861,28 @@ static void vid_color_playfield(ubyte color_code)
 }
 
 // check if a tile position is valid
-static bool valid_tile_pos(Int2 tile_pos)
+bool valid_tile_pos(Int2 tile_pos)
 {
   return ((tile_pos.x >= 0) && (tile_pos.x < DISPLAY_TILES_X) && (tile_pos.y >= 0) && (
       tile_pos.y < DISPLAY_TILES_Y));
 }
 
 // put a color into the color buffer
-static void vid_color(Int2 tile_pos, ubyte color_code)
+void vid_color(Int2 tile_pos, ubyte color_code)
 {
   assert(valid_tile_pos(tile_pos));
   state.gfx.color_ram[tile_pos.y][tile_pos.x] = color_code;
 }
 
 // put a tile into the tile buffer
-static void vid_tile(Int2 tile_pos, ubyte tile_code)
+void vid_tile(Int2 tile_pos, ubyte tile_code)
 {
   assert(valid_tile_pos(tile_pos));
   state.gfx.video_ram[tile_pos.y][tile_pos.x] = tile_code;
 }
 
 // put a colored tile into the tile and color buffers
-static void vid_color_tile(Int2 tile_pos, ubyte color_code, ubyte tile_code)
+void vid_color_tile(Int2 tile_pos, ubyte color_code, ubyte tile_code)
 {
   assert(valid_tile_pos(tile_pos));
   state.gfx.video_ram[tile_pos.y][tile_pos.x] = tile_code;
@@ -1842,7 +1890,7 @@ static void vid_color_tile(Int2 tile_pos, ubyte color_code, ubyte tile_code)
 }
 
 // translate ASCII char into "NAMCO char"
-static char conv_char(char c)
+char conv_char(char c)
 {
   switch (c)
   {
@@ -1868,7 +1916,7 @@ static char conv_char(char c)
 }
 
 // put colored char into tile+color buffers
-static void vid_color_char(Int2 tile_pos, ubyte color_code, char chr)
+void vid_color_char(Int2 tile_pos, ubyte color_code, char chr)
 {
   assert(valid_tile_pos(tile_pos));
   state.gfx.video_ram[tile_pos.y][tile_pos.x] = conv_char(chr);
@@ -1876,19 +1924,19 @@ static void vid_color_char(Int2 tile_pos, ubyte color_code, char chr)
 }
 
 // put char into tile buffer
-static void vid_char(Int2 tile_pos, char chr)
+void vid_char(Int2 tile_pos, char chr)
 {
   assert(valid_tile_pos(tile_pos));
   state.gfx.video_ram[tile_pos.y][tile_pos.x] = conv_char(chr);
 }
 
 // put colored text into the tile+color buffers
-static void vid_color_text(Int2 tile_pos, ubyte color_code, const(char)* text)
+void vid_color_text(Int2 tile_pos, ubyte color_code, const(char)* text)
 {
   assert(valid_tile_pos(tile_pos));
-  ubyte chr;
-  while ((chr = cast(ubyte)*text++) != 0)
+  while (*text)
   {
+    ubyte chr = cast(ubyte)*text++;
     if (tile_pos.x < DISPLAY_TILES_X)
     {
       vid_color_char(tile_pos, color_code, chr);
@@ -1902,12 +1950,12 @@ static void vid_color_text(Int2 tile_pos, ubyte color_code, const(char)* text)
 }
 
 // put text into the tile buffer
-static void vid_text(Int2 tile_pos, const(char)* text)
+void vid_text(Int2 tile_pos, const(char)* text)
 {
   assert(valid_tile_pos(tile_pos));
-  ubyte chr;
-  while ((chr = cast(ubyte)*text++) != 0)
+  while (*text)
   {
+    ubyte chr = cast(ubyte)*text++;
     if (tile_pos.x < DISPLAY_TILES_X)
     {
       vid_char(tile_pos, chr);
@@ -1925,7 +1973,7 @@ static void vid_text(Int2 tile_pos, const(char)* text)
     a zero-score will print as '00' (this is the same as on
     the Pacman arcade machine)
 */
-static void vid_color_score(Int2 tile_pos, ubyte color_code, uint score)
+void vid_color_score(Int2 tile_pos, ubyte color_code, uint score)
 {
   vid_color_char(tile_pos, color_code, '0');
   tile_pos.x--;
@@ -1952,7 +2000,7 @@ static void vid_color_score(Int2 tile_pos, ubyte color_code, uint score)
    This is (for instance) used to render the current "lives" and fruit
    symbols at the lower border.
 */
-static void vid_draw_tile_quad(Int2 tile_pos, ubyte color_code, ubyte tile_code)
+void vid_draw_tile_quad(Int2 tile_pos, ubyte color_code, ubyte tile_code)
 {
   for (ubyte yy = 0; yy < 2; yy++)
   {
@@ -1966,7 +2014,7 @@ static void vid_draw_tile_quad(Int2 tile_pos, ubyte color_code, ubyte tile_code)
 }
 
 // draw the fruit bonus score tiles (when Pacman has eaten the bonus fruit)
-static void vid_fruit_score(Fruit fruit_type)
+void vid_fruit_score(Fruit fruit_type)
 {
   assert((fruit_type >= 0) && (fruit_type < Fruit.NUM_FRUITS));
   ubyte color_code = (fruit_type == Fruit.FRUIT_NONE) ? COLOR_DOT : COLOR_FRUIT_SCORE;
@@ -1977,19 +2025,19 @@ static void vid_fruit_score(Fruit fruit_type)
 }
 
 // clear input state and disable input
-static void input_disable()
+void input_disable()
 {
   memset(&state.input, 0, state.input.sizeof);
 }
 
 // enable input again
-static void input_enable()
+void input_enable()
 {
   state.input.enabled = true;
 }
 
 // get the current input as dir_t
-static Dir input_dir(Dir default_dir)
+Dir input_dir(Dir default_dir)
 {
   if (state.input.up)
   {
@@ -2014,7 +2062,7 @@ static Dir input_dir(Dir default_dir)
 }
 
 // return the number of ticks since a time trigger was triggered
-static uint since(ref Trigger t)
+uint since(scope ref Trigger t)
 {
   if (state.timing.tick >= t.tick)
   {
@@ -2027,7 +2075,7 @@ static uint since(ref Trigger t)
 }
 
 // check if a time trigger is between begin and end tick
-static bool between(ref Trigger t, uint begin, uint end)
+bool between(scope ref Trigger t, uint begin, uint end)
 {
   assert(begin < end);
   if (t.tick != DISABLED_TICKS)
@@ -2042,13 +2090,13 @@ static bool between(ref Trigger t, uint begin, uint end)
 }
 
 // check if a time trigger was triggered exactly N ticks ago
-static bool after_once(ref Trigger t, uint ticks)
+bool after_once(scope ref Trigger t, uint ticks)
 {
   return since(t) == ticks;
 }
 
 // check if a time trigger was triggered more than N ticks ago
-static bool after(ref Trigger t, uint ticks)
+bool after(scope ref Trigger t, uint ticks)
 {
   uint s = since(t);
   if (s != DISABLED_TICKS)
@@ -2062,7 +2110,7 @@ static bool after(ref Trigger t, uint ticks)
 }
 
 // same as between(t, 0, ticks)
-static bool before(ref Trigger t, uint ticks)
+bool before(scope ref Trigger t, uint ticks)
 {
   uint s = since(t);
   if (s != DISABLED_TICKS)
@@ -2076,35 +2124,35 @@ static bool before(ref Trigger t, uint ticks)
 }
 
 // disable and clear all sprites
-static void spr_clear()
+void spr_clear()
 {
   memset(&state.gfx.sprite, 0, state.gfx.sprite.sizeof);
 }
 
 // get pointer to pacman sprite
-static Sprite* spr_pacman()
+scope Sprite* spr_pacman()
 {
   return &state.gfx.sprite[SpriteIndex.SPRITE_PACMAN];
 }
 
 // get pointer to ghost sprite
-static Sprite* spr_ghost(GhostType type)
+scope Sprite* spr_ghost(GhostType type)
 {
   assert((type >= 0) && (type < GhostType.NUM_GHOSTS));
   return &state.gfx.sprite[SpriteIndex.SPRITE_BLINKY + type];
 }
 
 // get pointer to fruit sprite
-static Sprite* spr_fruit()
+scope Sprite* spr_fruit()
 {
   return &state.gfx.sprite[SpriteIndex.SPRITE_FRUIT];
 }
 
 // set sprite to animated Pacman
-static void spr_anim_pacman(Dir dir, uint tick)
+void spr_anim_pacman(Dir dir, uint tick)
 {
   // animation frames for horizontal and vertical movement
-  static const ubyte[4][2] tiles = [
+  const ubyte[4][2] tiles = [
     [44, 46, 48, 46], // horizontal (needs flipx)
     [45, 47, 48, 47] // vertical (needs flipy)
   ];
@@ -2117,7 +2165,7 @@ static void spr_anim_pacman(Dir dir, uint tick)
 }
 
 // set sprite to Pacman's death sequence
-static void spr_anim_pacman_death(uint tick)
+void spr_anim_pacman_death(uint tick)
 {
   // the death animation tile sequence starts at sprite tile number 52 and ends at 63
   Sprite* spr = spr_pacman();
@@ -2131,10 +2179,10 @@ static void spr_anim_pacman_death(uint tick)
 }
 
 // set sprite to animated ghost
-static void spr_anim_ghost(GhostType ghost_type, Dir dir, uint tick)
+void spr_anim_ghost(GhostType ghost_type, Dir dir, uint tick)
 {
   assert((dir >= 0) && (dir < Dir.NUM_DIRS));
-  static const ubyte[2][4] tiles = [
+  const ubyte[2][4] tiles = [
     [32, 33], // right
     [34, 35], // down
     [36, 37], // left
@@ -2149,9 +2197,9 @@ static void spr_anim_ghost(GhostType ghost_type, Dir dir, uint tick)
 }
 
 // set sprite to frightened ghost
-static void spr_anim_ghost_frightened(GhostType ghost_type, uint tick)
+void spr_anim_ghost_frightened(GhostType ghost_type, uint tick)
 {
-  static const ubyte[2] tiles = [28, 29];
+  const ubyte[2] tiles = [28, 29];
   uint phase = (tick / 4) & 1;
   Sprite* spr = spr_ghost(ghost_type);
   spr.tile = tiles[phase];
@@ -2172,10 +2220,10 @@ static void spr_anim_ghost_frightened(GhostType ghost_type, uint tick)
     images but with a different color code which makes
     only the eyes visible
 */
-static void spr_anim_ghost_eyes(GhostType ghost_type, Dir dir)
+void spr_anim_ghost_eyes(GhostType ghost_type, Dir dir)
 {
   assert((dir >= 0) && (dir < Dir.NUM_DIRS));
-  static const ubyte[Dir.NUM_DIRS] tiles = [32, 34, 36, 38];
+  const ubyte[Dir.NUM_DIRS] tiles = [32, 34, 36, 38];
   Sprite* spr = spr_ghost(ghost_type);
   spr.tile = tiles[dir];
   spr.color = COLOR_EYES;
@@ -2184,13 +2232,13 @@ static void spr_anim_ghost_eyes(GhostType ghost_type, Dir dir)
 }
 
 // convert pixel position to tile position
-static Int2 pixel_to_tile_pos(Int2 pix_pos)
+Int2 pixel_to_tile_pos(Int2 pix_pos)
 {
   return i2(pix_pos.x / TILE_WIDTH, pix_pos.y / TILE_HEIGHT);
 }
 
 // clamp tile pos to valid playfield coords
-static Int2 clamped_tile_pos(Int2 tile_pos)
+Int2 clamped_tile_pos(Int2 tile_pos)
 {
   Int2 res = tile_pos;
   if (res.x < 0)
@@ -2213,17 +2261,17 @@ static Int2 clamped_tile_pos(Int2 tile_pos)
 }
 
 // convert a direction to a movement vector
-static Int2 dir2Vec(Dir dir)
+Int2 dir2Vec(Dir dir)
 {
   assert((dir >= 0) && (dir < Dir.NUM_DIRS));
-  static const Int2[Dir.NUM_DIRS] dir_map = [
+  const Int2[Dir.NUM_DIRS] dir_map = [
     {+1, 0}, {0, +1}, {-1, 0}, {0, -1}
   ];
   return dir_map[dir];
 }
 
 // return the reverse direction
-static Dir reverse_dir(Dir dir)
+Dir reverse_dir(Dir dir)
 {
   switch (dir)
   {
@@ -2239,7 +2287,7 @@ static Dir reverse_dir(Dir dir)
 }
 
 // return tile code at tile position
-static ubyte tile_code_at(Int2 tile_pos)
+ubyte tile_code_at(Int2 tile_pos)
 {
   assert((tile_pos.x >= 0) && (tile_pos.x < DISPLAY_TILES_X));
   assert((tile_pos.y >= 0) && (tile_pos.y < DISPLAY_TILES_Y));
@@ -2247,39 +2295,39 @@ static ubyte tile_code_at(Int2 tile_pos)
 }
 
 // check if a tile position contains a blocking tile (walls and ghost house door)
-static bool is_blocking_tile(Int2 tile_pos)
+bool is_blocking_tile(Int2 tile_pos)
 {
   return tile_code_at(tile_pos) >= 0xC0;
 }
 
 // check if a tile position contains a dot tile
-static bool is_dot(Int2 tile_pos)
+bool is_dot(Int2 tile_pos)
 {
   return tile_code_at(tile_pos) == TILE_DOT;
 }
 
 // check if a tile position contains a pill tile
-static bool is_pill(Int2 tile_pos)
+bool is_pill(Int2 tile_pos)
 {
   return tile_code_at(tile_pos) == TILE_PILL;
 }
 
 // check if a tile position is in the teleport tunnel
-static bool is_tunnel(Int2 tile_pos)
+bool is_tunnel(Int2 tile_pos)
 {
   return (tile_pos.y == 17) && ((tile_pos.x <= 5) || (tile_pos.x >= 22));
 }
 
 // check if a position is in the ghost's red zone, where upward movement is forbidden
 // (see Pacman Dossier "Areas To Exploit")
-static bool is_redzone(Int2 tile_pos)
+bool is_redzone(Int2 tile_pos)
 {
   return ((tile_pos.x >= 11) && (tile_pos.x <= 16) && ((tile_pos.y == 14) || (tile_pos.y == 26)));
 }
 
 // test if movement from a pixel position in a wanted direction is possible,
 // allow_cornering is Pacman's feature to take a diagonal shortcut around corners
-static bool can_move(Int2 pos, Dir wanted_dir, bool allow_cornering)
+bool can_move(Int2 pos, Dir wanted_dir, bool allow_cornering)
 {
   const Int2 dir_vec = dir2Vec(wanted_dir);
   const Int2 dist_mid = dist_to_tile_mid(pos);
@@ -2314,7 +2362,7 @@ static bool can_move(Int2 pos, Dir wanted_dir, bool allow_cornering)
 }
 
 // compute a new pixel position along a direction (without blocking check!)
-static Int2 move(Int2 pos, Dir dir, bool allow_cornering)
+Int2 move(Int2 pos, Dir dir, bool allow_cornering)
 {
   const Int2 dir_vec = dir2Vec(dir);
   pos = add_i2(pos, dir_vec);

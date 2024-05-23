@@ -440,12 +440,12 @@ struct State
 }
 
 // scatter target positions (in tile coords)
-static const Int2[GhostType.NUM_GHOSTS] ghost_scatter_targets = [
+const Int2[GhostType.NUM_GHOSTS] ghost_scatter_targets = [
 	{25, 0}, {2, 0}, {27, 34}, {0, 34}
 ];
 
 // starting positions for ghosts (pixel coords)
-static const Int2[GhostType.NUM_GHOSTS] ghost_starting_pos = [
+const Int2[GhostType.NUM_GHOSTS] ghost_starting_pos = [
 	{14 * 8, 14 * 8 + 4},
 	{14 * 8, 17 * 8 + 4},
 	{12 * 8, 17 * 8 + 4},
@@ -453,7 +453,7 @@ static const Int2[GhostType.NUM_GHOSTS] ghost_starting_pos = [
 ];
 
 // target positions for ghost entering the ghost house (pixel coords)
-static const Int2[GhostType.NUM_GHOSTS] ghost_house_target_pos = [
+const Int2[GhostType.NUM_GHOSTS] ghost_house_target_pos = [
 	{14 * 8, 17 * 8 + 4},
 	{14 * 8, 17 * 8 + 4},
 	{12 * 8, 17 * 8 + 4},
@@ -461,7 +461,7 @@ static const Int2[GhostType.NUM_GHOSTS] ghost_house_target_pos = [
 ];
 
 // fruit tiles, sprite tiles and colors
-static const ubyte[3][Fruit.NUM_FRUITS] fruit_tiles_colors = [
+const ubyte[3][Fruit.NUM_FRUITS] fruit_tiles_colors = [
 	[0, 0, 0], // FRUIT_NONE
 	[TILE_CHERRIES, SPRITETILE_CHERRIES, COLOR_CHERRIES],
 	[TILE_STRAWBERRY, SPRITETILE_STRAWBERRY, COLOR_STRAWBERRY],
@@ -474,7 +474,7 @@ static const ubyte[3][Fruit.NUM_FRUITS] fruit_tiles_colors = [
 ];
 
 // the tiles for displaying the bonus-fruit-score, this is a number built from 4 tiles
-static const ubyte[4][Fruit.NUM_FRUITS] fruit_score_tiles = [
+const ubyte[4][Fruit.NUM_FRUITS] fruit_score_tiles = [
 	[0x40, 0x40, 0x40, 0x40], // FRUIT_NONE
 	[0x40, 0x81, 0x85, 0x40], // FRUIT_CHERRIES: 100
 	[0x40, 0x82, 0x85, 0x40], // FRUIT_STRAWBERRY: 300
@@ -499,7 +499,7 @@ enum
 	MAX_LEVELSPEC = 21,
 }
 
-static const LevelSpec[MAX_LEVELSPEC] levelspec_table = [
+const LevelSpec[MAX_LEVELSPEC] levelspec_table = [
 	{Fruit.FRUIT_CHERRIES, 10, 6 * 60,},
 	{Fruit.FRUIT_STRAWBERRY, 30, 5 * 60,},
 	{Fruit.FRUIT_PEACH, 50, 4 * 60,},
@@ -524,108 +524,108 @@ static const LevelSpec[MAX_LEVELSPEC] levelspec_table = [
 ];
 
 // forward-declared sound-effect register dumps (recorded from Pacman arcade emulator)
-static const uint[490] snd_dump_prelude = 0;
-static const uint[90] snd_dump_dead = 0;
+const uint[490] snd_dump_prelude = 0;
+const uint[90] snd_dump_dead = 0;
 
 // sound effect description structs
-static const SoundDesc snd_prelude = {
+const SoundDesc snd_prelude = {
 	ptr: snd_dump_prelude.ptr,
 	size: snd_dump_prelude.sizeof,
 	voice: [true, true, false]
 };
 
-static const SoundDesc snd_dead = {
+const SoundDesc snd_dead = {
 	ptr: snd_dump_dead.ptr,
 	size: snd_dump_dead.sizeof,
 	voice: [false, false, true]
 };
 
-static const SoundDesc snd_eatdot1 = {
+const SoundDesc snd_eatdot1 = {
     func : &snd_func_eatdot1,
     voice : [ false, false, true ]
 };
 
-static const SoundDesc snd_eatdot2 = {
+const SoundDesc snd_eatdot2 = {
     func : &snd_func_eatdot2,
     voice : [ false, false, true ]
 };
 
-static const SoundDesc snd_eatghost = {
+const SoundDesc snd_eatghost = {
     func : &snd_func_eatghost,
     voice : [ false, false, true ]
 };
 
-static const SoundDesc snd_eatfruit = {
+const SoundDesc snd_eatfruit = {
     func : &snd_func_eatfruit,
     voice : [ false, false, true ]
 };
 
-static const SoundDesc snd_weeooh = {
+const SoundDesc snd_weeooh = {
     func : &snd_func_weeooh,
     voice : [ false, true, false ]
 };
 
-static const SoundDesc snd_frightened = {
+const SoundDesc snd_frightened = {
     func : &snd_func_frightened,
     voice: [ false, true, false ]
 };
 
 // deactivate a time trigger
-static void disable(ref Trigger t)
+void disable(scope ref Trigger t)
 {
 	t.tick = DISABLED_TICKS;
 }
 
 // return a disabled time trigger
-static Trigger disabled_timer()
+Trigger disabled_timer()
 {
 	Trigger t = {tick: DISABLED_TICKS};
 	return t;
 }
 
 // shortcut to create an Int2
-static Int2 i2(short x, short y)
+Int2 i2(short x, short y)
 {
 	Int2 res = {x: x, y: y};
 	return res;
 }
 
 // add two Int2
-static Int2 add_i2(Int2 v0, Int2 v1)
+Int2 add_i2(Int2 v0, Int2 v1)
 {
 	Int2 res = {x: cast(short)(v0.x + v1.x), y: cast(short)(v0.y + v1.y)};
 	return res;
 }
 
 // subtract two Int2
-static Int2 sub_i2(Int2 v0, Int2 v1)
+Int2 sub_i2(Int2 v0, Int2 v1)
 {
 	Int2 res = {x: cast(short)(v0.x - v1.x), y: cast(short)(v0.y - v1.y)};
 	return res;
 }
 
 // multiply Int2 with scalar
-static Int2 mul_i2(Int2 v, short s)
+Int2 mul_i2(Int2 v, short s)
 {
 	Int2 z = {x: cast(short)(v.x * s), y: cast(short)(v.y * s)};
 	return z;
 }
 
 // squared-distance between two Int2
-static int squared_distance_i2(Int2 v0, Int2 v1)
+int squared_distance_i2(Int2 v0, Int2 v1)
 {
 	Int2 d = {x: cast(short)(v1.x - v0.x), y: cast(short)(v1.y - v0.y)};
 	return d.x * d.x + d.y * d.y;
 }
 
 // check if two Int2 are equal
-static bool equal_i2(Int2 v0, Int2 v1)
+bool equal_i2(Int2 v0, Int2 v1)
 {
 	return (v0.x == v1.x) && (v0.y == v1.y);
 }
 
 // check if two Int2 are nearly equal
-static bool nearequal_i2(Int2 v0, Int2 v1, short tolerance)
+bool nearequal_i2(Int2 v0, Int2 v1, short tolerance)
 {
 	import core.stdc.stdlib : abs;
 
@@ -633,7 +633,7 @@ static bool nearequal_i2(Int2 v0, Int2 v1, short tolerance)
 }
 
 // convert an actor pos (origin at center) to sprite pos (origin top left)
-static Int2 actor_to_sprite_pos(Int2 pos)
+Int2 actor_to_sprite_pos(Int2 pos)
 {
 	return i2(cast(short)(pos.x - SPRITE_WIDTH / 2), cast(short)(pos.y - SPRITE_HEIGHT / 2));
 }
