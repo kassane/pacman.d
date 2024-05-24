@@ -1,5 +1,5 @@
 const std = @import("std");
-const abs = @import("abs");
+const ldc2 = @import("abs").ldc2;
 const sokol_build = @import("sokol");
 const builtin = @import("builtin");
 
@@ -17,6 +17,7 @@ pub fn build(b: *std.Build) !void {
     const sokol = b.dependency("sokol", .{
         .target = target,
         .optimize = optimize,
+        .artifact = true,
     });
     const dub_artifact = b.option(bool, "dub-artifact", "enable dub artifact") orelse false;
 
@@ -55,7 +56,7 @@ pub fn build(b: *std.Build) !void {
         });
     }
 }
-fn buildD(b: *std.Build, options: abs.DCompileStep) !void {
-    const exe = try abs.ldcBuildStep(b, options);
+fn buildD(b: *std.Build, options: ldc2.DCompileStep) !void {
+    const exe = try ldc2.BuildStep(b, options);
     b.default_step.dependOn(&exe.step);
 }

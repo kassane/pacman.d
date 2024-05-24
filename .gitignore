@@ -28,7 +28,7 @@ dub.*.json
 bin/
 
 # zig build
-zig-*/
+*zig-*/
 
 # vscode
 .vscode/
