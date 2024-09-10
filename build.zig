@@ -1,5 +1,6 @@
 const std = @import("std");
 const ldc2 = @import("abs").ldc2;
+const zcc = @import("abs").zcc;
 const sokol_build = @import("sokol");
 const builtin = @import("builtin");
 
@@ -53,6 +54,8 @@ pub fn build(b: *std.Build) !void {
             .artifact = sokol.artifact("sokol"),
             .sources = &.{"source/app.d"},
             .dflags = dflags.items,
+            .use_zigcc = true,
+            .zcc_options = try zcc.buildOptions(b, target),
         });
     }
 }
