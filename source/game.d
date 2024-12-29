@@ -1805,10 +1805,8 @@ void gfx_draw()
   };
   sg.Bindings offscreen_bindings = {
     vertex_buffers: [state.gfx.offscreen.vbuf],
-    fs: {
-      images: [state.gfx.offscreen.tile_img, state.gfx.offscreen.palette_img],
-      samplers: [state.gfx.offscreen.sampler, state.gfx.offscreen.sampler]
-    }
+    images: [state.gfx.offscreen.tile_img, state.gfx.offscreen.palette_img],
+    samplers: [state.gfx.offscreen.sampler, state.gfx.offscreen.sampler]
   };
   sg.beginPass(offs_pass);
   sg.applyPipeline(state.gfx.offscreen.pip);
@@ -1825,10 +1823,8 @@ void gfx_draw()
   };
   sg.Bindings display_bindings = {
     vertex_buffers: [state.gfx.display.quad_vbuf],
-    fs: {
-      images: [state.gfx.offscreen.render_target],
-      samplers: [state.gfx.display.sampler],
-    }
+    images: [state.gfx.offscreen.render_target],
+    samplers: [state.gfx.display.sampler],
   };
   sg.beginPass(display_pass);
   gfx_adjust_viewport(canvas_width, canvas_height);

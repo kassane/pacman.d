@@ -3,12 +3,12 @@
     .version = "0.0.1",
     .dependencies = .{
         .abs = .{
-            .url = "git+https://github.com/kassane/anotherBuildStep#db106f367c6c8dc266c7b9890e9c9b88638ef035",
-            .hash = "122090d279f1d06471142f5bd6a146bdd1b3e5a049b9c97b3d04033eb330d5167aec",
+            .url = "git+https://github.com/kassane/anotherbuildstep#0457a46f52c6151b754437c5b5e0b01856d34fa4",
+            .hash = "12200ecd64e7a19d4f88a05c529ca7b7b98f8389fcb6983256fa30983f71f7162181",
         },
         .sokol = .{
-            .url = "git+https://github.com/kassane/sokol-d#aa76c453ceb98a29770dbfa0d722418763bc9d59",
-            .hash = "12205a1159b5ee8f67b2fab31efabbbc4bb4db23bd11f15fa89d4ae7d14fb5043f47",
+            .url = "git+https://github.com/kassane/sokol-d#v0.1.6",
+            .hash = "1220b29c692b9a6ca52a25e05019a468f6ec20482a0554468b80d6385996081595f0",
         },
     },
     .paths = .{
