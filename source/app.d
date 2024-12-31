@@ -51,13 +51,13 @@ static void frame()
 {
 
   // run the game at a fixed tick rate regardless of frame rate
-  uint frame_time_ns = cast(uint)(sapp.frameDuration * 1000_000_000.0);
+  auto frame_time_ns = cast(float)(sapp.frameDuration * 1000_000_000.0);
   // clamp max frame time (so the timing isn't messed up when stopping in the debugger)
-  if (frame_time_ns > 33_333_333)
+  if (frame_time_ns > MAX_FRAME_TIME_NS)
   {
-    frame_time_ns = 33_333_333;
+    frame_time_ns = MAX_FRAME_TIME_NS;
   }
-  state.timing.tick_accum += frame_time_ns;
+  state.timing.tick_accum += cast(int) frame_time_ns;
   while (state.timing.tick_accum > -TICK_TOLERANCE_NS)
   {
     state.timing.tick_accum -= TICK_DURATION_NS;
@@ -90,7 +90,7 @@ static void frame()
     }
   }
   gfx_draw();
-  snd_frame(frame_time_ns);
+  snd_frame(cast(int) frame_time_ns);
 }
 
 static void input(const(sapp.Event)* ev)
@@ -139,7 +139,6 @@ void main()
     event_cb: &input,
     width: DISPLAY_TILES_X * TILE_WIDTH * 2,
     height: DISPLAY_TILES_Y * TILE_HEIGHT * 2,
-    win32_console_attach: true,
     icon: {sokol_default: true},
     logger: {func: &log.func}
   };

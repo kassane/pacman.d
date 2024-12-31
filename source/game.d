@@ -8,7 +8,7 @@ import sapp = sokol.app;
 import sg = sokol.gfx;
 import sglue = sokol.glue;
 import log = sokol.log;
-import shd = shader;
+import shd = shader.pacman;
 
 extern (C):
 nothrow @nogc:
@@ -105,62 +105,24 @@ void game_init_playfield()
     "2BBBBBBBBBBBBBBBBBBBBBBBBBB3";
 
   // ASCII to tile mapping
-  ubyte[128] t;
-  foreach (ref ubyte tile; t)
+  ubyte[128] t = 0;
+  //dfmt off
+  for (int i = 0; i < 128; i++) { t[i]=TILE_DOT; }
+  t[' ']=0x40; t['0']=0xD1; t['1']=0xD0; t['2']=0xD5; t['3']=0xD4; t['4']=0xFB;
+  t['5']=0xFA; t['6']=0xD7; t['7']=0xD9; t['8']=0xD6; t['9']=0xD8; t['U']=0xDB;
+  t['L']=0xD3; t['R']=0xD2; t['B']=0xDC; t['b']=0xDF; t['e']=0xE7; t['f']=0xE6;
+  t['g']=0xEB; t['h']=0xEA; t['l']=0xE8; t['r']=0xE9; t['u']=0xE5; t['w']=0xF5;
+  t['x']=0xF2; t['y']=0xF3; t['z']=0xF4; t['m']=0xED; t['n']=0xEC; t['o']=0xEF;
+  t['p']=0xEE; t['j']=0xDD; t['i']=0xD2; t['k']=0xDB; t['q']=0xD3; t['s']=0xF1;
+  t['t']=0xF0; t['-']=TILE_DOOR; t['P']=TILE_PILL;
+  for (int y = 3, i = 0; y <= DISPLAY_TILES_Y - 2; y++)
   {
-    tile = TILE_DOT;
-  }
-  t[' '] = 0x40;
-  t['0'] = 0xD1;
-  t['1'] = 0xD0;
-  t['2'] = 0xD5;
-  t['3'] = 0xD4;
-  t['4'] = 0xFB;
-  t['5'] = 0xFA;
-  t['6'] = 0xD7;
-  t['7'] = 0xD9;
-  t['8'] = 0xD6;
-  t['9'] = 0xD8;
-  t['U'] = 0xDB;
-  t['L'] = 0xD3;
-  t['R'] = 0xD2;
-  t['B'] = 0xDC;
-  t['b'] = 0xDF;
-  t['e'] = 0xE7;
-  t['f'] = 0xE6;
-  t['g'] = 0xEB;
-  t['h'] = 0xEA;
-  t['l'] = 0xE8;
-  t['r'] = 0xE9;
-  t['u'] = 0xE5;
-  t['w'] = 0xF5;
-  t['x'] = 0xF2;
-  t['y'] = 0xF3;
-  t['z'] = 0xF4;
-  t['m'] = 0xED;
-  t['n'] = 0xEC;
-  t['o'] = 0xEF;
-  t['p'] = 0xEE;
-  t['j'] = 0xDD;
-  t['i'] = 0xD2;
-  t['k'] = 0xDB;
-  t['q'] = 0xD3;
-  t['s'] = 0xF1;
-  t['t'] = 0xF0;
-  t['-'] = TILE_DOOR;
-  t['P'] = TILE_PILL;
-
-  // Initialize playfield tiles
-  int index = 0;
-  for (int y = 3; y <= 33; y++)
-  {
-    for (int x = 0; x < 28; x++)
+    for (int x = 0; x < DISPLAY_TILES_X; x++, i++)
     {
-      state.gfx.video_ram[y][x] = t[cast(ubyte) tiles[index] & 127];
-      index++;
+      state.gfx.video_ram[y][x] = t[tiles[i] & 127];
     }
   }
-
+  // dfmt on
   // Ghost house gate colors
   vid_color(i2(13, 15), 0x18);
   vid_color(i2(14, 15), 0x18);
@@ -183,8 +145,8 @@ void game_disable_timers()
 // one-time init at start of game state
 void game_init()
 {
-  input_enable();
-  game_disable_timers();
+  input_enable;
+  game_disable_timers;
   state.game.round = DBG_START_ROUND;
   state.game.freeze = FreezeType.FREEZETYPE_PRELUDE;
   state.game.num_lives = NUM_LIVES;
@@ -1238,7 +1200,6 @@ void game_tick()
 
 void intro_tick()
 {
-
   // on intro-state enter, enable input and draw any initial text
   if (now(state.intro.started))
   {
@@ -1359,32 +1320,36 @@ void gfx_create_resources()
   state.gfx.display.quad_vbuf = sg.makeBuffer(quad_vbuf);
 
   // create pipeline and shader object for rendering into offscreen render target
+  // dfmt off
   sg.PipelineDesc pip_desc = {
-    shader: sg.makeShader(shd.offscreenShaderDesc(sg.queryBackend)), // layout: {
-      //   attrs: [
-      //     {format: sg.VertexFormat.Float2},
-      //     {format: sg.VertexFormat.Float2},
-      //     {format: sg.VertexFormat.Ubyte4n}
-      //   ],
-      // },
-    depth: {pixel_format: sg.PixelFormat.None}, // colors: [
-      //   {
-      //     pixel_format: sg.PixelFormat.Rgba8,
-      //     blend: {
-      //       enabled: true,
-      //       src_factor_rgb: sg.BlendFactor.Src_alpha,
-      //       dst_factor_rgb: sg.BlendFactor.One_minus_blend_alpha,
-      //     }
-      //   }
-      // ]
-
-  
+    shader: sg.makeShader(shd.offscreenShaderDesc(sg.queryBackend)),
+    layout: {
+        attrs: [
+          shd.ATTR_OFFSCREEN_IN_POS: {format: sg.VertexFormat.Float2},
+          shd.ATTR_OFFSCREEN_IN_UV: {format: sg.VertexFormat.Float2},
+          shd.ATTR_OFFSCREEN_IN_DATA: {format: sg.VertexFormat.Ubyte4n}
+        ],
+      },
+    depth: {pixel_format: sg.PixelFormat.None},
+    colors:
+    [
+      {
+        pixel_format: sg.PixelFormat.Rgba8,
+        blend:
+        {
+          enabled: true,
+          src_factor_rgb: sg.BlendFactor.Src_alpha,
+          dst_factor_rgb: sg.BlendFactor.One_minus_blend_alpha,
+        }
+      }
+    ]
   };
+  // dfmt on
   state.gfx.offscreen.pip = sg.makePipeline(pip_desc);
 
   sg.PipelineDesc display_pip = {
     shader: sg.makeShader(shd.displayShaderDesc(sg.queryBackend)),
-    layout: {attrs: [{format: sg.VertexFormat.Float2}]},
+    layout: {attrs: [shd.ATTR_DISPLAY_POS: {format: sg.VertexFormat.Float2}]},
     primitive_type: sg.PrimitiveType.Triangle_strip
   };
   state.gfx.display.pip = sg.makePipeline(display_pip);
@@ -1405,7 +1370,6 @@ void gfx_create_resources()
     wrap_u: sg.Wrap.Clamp_to_edge,
     wrap_v: sg.Wrap.Clamp_to_edge,
   };
-  state.gfx.display.sampler = sg.makeSampler(display_sampler);
 
   // pass object for rendering into the offscreen render target
   sg.AttachmentsDesc offscreen_attachments = {
@@ -1447,6 +1411,15 @@ void gfx_create_resources()
     wrap_v: sg.Wrap.Clamp_to_edge,
   };
   state.gfx.offscreen.sampler = sg.makeSampler(offscreen_sampler);
+  state.gfx.display.sampler = sg.makeSampler(display_sampler);
+
+  state.gfx.offscreen.bind.vertex_buffers[0] = state.gfx.offscreen.vbuf;
+  state.gfx.offscreen.bind.images[shd.IMG_TILE_TEX] = state.gfx.offscreen.tile_img;
+  state.gfx.offscreen.bind.images[shd.IMG_PAL_TEX] = state.gfx.offscreen.palette_img;
+  state.gfx.offscreen.bind.samplers[shd.SMP_SMP] = state.gfx.offscreen.sampler;
+  state.gfx.display.bind.vertex_buffers[0] = state.gfx.display.quad_vbuf;
+  state.gfx.display.bind.images[shd.IMG_TEX] = state.gfx.offscreen.render_target;
+  state.gfx.display.bind.samplers[shd.SMP_SMP] = state.gfx.display.sampler;
 }
 
 /*
@@ -1470,7 +1443,7 @@ void gfx_decode_tile_8x4(
   const(char)* tile_base,
   uint tile_stride,
   uint tile_offset,
-  uint tile_code)
+  ubyte tile_code)
 {
   for (uint tx = 0; tx < TILE_WIDTH; tx++)
   {
@@ -1487,7 +1460,7 @@ void gfx_decode_tile_8x4(
 
 // decode an 8x8 tile into the tile texture's upper half
 pragma(inline, true)
-void gfx_decode_tile(uint tile_code)
+void gfx_decode_tile(ubyte tile_code)
 {
   uint x = tile_code * TILE_WIDTH;
   uint y0 = 0;
@@ -1580,7 +1553,7 @@ void gfx_init()
     shader_pool_size: 2,
     pipeline_pool_size: 2,
     attachments_pool_size: 1,
-    environment: sglue.environment(),
+    environment: sglue.environment,
     logger: {func: &log.slog_func},
   };
   sg.setup(gfx);
@@ -1588,9 +1561,9 @@ void gfx_init()
   disable(state.gfx.fadeout);
   state.gfx.fade = 0xFF;
   spr_clear();
-  gfx_decode_tiles();
-  gfx_decode_color_palette();
-  gfx_create_resources();
+  gfx_decode_tiles;
+  gfx_decode_color_palette;
+  gfx_create_resources;
 }
 
 void gfx_shutdown()
@@ -1803,39 +1776,26 @@ void gfx_draw()
   sg.Pass offs_pass = {
     action: state.gfx.pass_action, attachments: state.gfx.offscreen.attachments
   };
-  sg.Bindings offscreen_bindings = {
-    vertex_buffers: [state.gfx.offscreen.vbuf],
-    images: [state.gfx.offscreen.tile_img, state.gfx.offscreen.palette_img],
-    samplers: [state.gfx.offscreen.sampler, state.gfx.offscreen.sampler]
-  };
   sg.beginPass(offs_pass);
   sg.applyPipeline(state.gfx.offscreen.pip);
-  sg.applyBindings(offscreen_bindings);
+  sg.applyBindings(state.gfx.offscreen.bind);
   sg.draw(0, state.gfx.num_vertices, 1);
   sg.endPass;
 
   // upscale-render the offscreen render target into the display framebuffer
-
-  const int canvas_width = sapp.width;
-  const int canvas_height = sapp.height;
   sg.Pass display_pass = {
-    action: state.gfx.pass_action, attachments: state.gfx.offscreen.attachments
-  };
-  sg.Bindings display_bindings = {
-    vertex_buffers: [state.gfx.display.quad_vbuf],
-    images: [state.gfx.offscreen.render_target],
-    samplers: [state.gfx.display.sampler],
+    action: state.gfx.pass_action, swapchain: sglue.swapchain
   };
   sg.beginPass(display_pass);
-  gfx_adjust_viewport(canvas_width, canvas_height);
+  gfx_adjust_viewport(sapp.width, sapp.height);
   sg.applyPipeline(state.gfx.display.pip);
-  sg.applyBindings(display_bindings);
+  sg.applyBindings(state.gfx.display.bind);
   sg.draw(0, 4, 1);
   sg.endPass;
   sg.commit;
 }
 
-__gshared State state;
+static State state;
 
 // clear tile and color buffer
 void vid_clear(ubyte tile_code, ubyte color_code)

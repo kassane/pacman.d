@@ -51,7 +51,7 @@ enum PACMAN_DEATH_TICKS = 150; // number of ticks to show the Pacman death seque
 enum GAMEOVER_TICKS = 3 * 60; // number of ticks the game over message is shown
 enum ROUNDWON_TICKS = 4 * 60; // number of ticks to wait after a round was won
 enum FRUITACTIVE_TICKS = 10 * 60; // number of ticks a bonus fruit is shown
-
+enum MAX_FRAME_TIME_NS = 33_333_333.0;
 /* common tile, sprite and color codes, these are the same as on the Pacman
    arcade machine and extracted by looking at memory locations of a Pacman emulator
 */
@@ -414,7 +414,9 @@ struct State
 			sg.Sampler sampler;
 			sg.Pipeline pip;
 			sg.Attachments attachments;
+			sg.Bindings bind;
 		}
+
 		Offscreen offscreen;
 
 		struct Display
@@ -422,7 +424,9 @@ struct State
 			sg.Buffer quad_vbuf;
 			sg.Pipeline pip;
 			sg.Sampler sampler;
+			sg.Bindings bind;
 		}
+
 		Display display;
 
 		// intermediate vertex buffer for tile- and sprite-rendering
@@ -541,33 +545,33 @@ const SoundDesc snd_dead = {
 };
 
 const SoundDesc snd_eatdot1 = {
-    func : &snd_func_eatdot1,
-    voice : [ false, false, true ]
+	func: &snd_func_eatdot1,
+	voice: [false, false, true]
 };
 
 const SoundDesc snd_eatdot2 = {
-    func : &snd_func_eatdot2,
-    voice : [ false, false, true ]
+	func: &snd_func_eatdot2,
+	voice: [false, false, true]
 };
 
 const SoundDesc snd_eatghost = {
-    func : &snd_func_eatghost,
-    voice : [ false, false, true ]
+	func: &snd_func_eatghost,
+	voice: [false, false, true]
 };
 
 const SoundDesc snd_eatfruit = {
-    func : &snd_func_eatfruit,
-    voice : [ false, false, true ]
+	func: &snd_func_eatfruit,
+	voice: [false, false, true]
 };
 
 const SoundDesc snd_weeooh = {
-    func : &snd_func_weeooh,
-    voice : [ false, true, false ]
+	func: &snd_func_weeooh,
+	voice: [false, true, false]
 };
 
 const SoundDesc snd_frightened = {
-    func : &snd_func_frightened,
-    voice: [ false, true, false ]
+	func: &snd_func_frightened,
+	voice: [false, true, false]
 };
 
 // deactivate a time trigger
