@@ -44,7 +44,13 @@ pub fn build(b: *std.Build) !void {
 
         // common flags
         try dflags.append("-w");
-        try dflags.append("--preview=all");
+        try dflags.appendSlice(&.{
+            "-preview=dip1008",
+            "-preview=dip1000",
+            "-preview=dip1021",
+            "-preview=in",
+            "-preview=rvaluerefparam",
+        });
 
         try buildD(b, .{
             .name = "pacman-d",
@@ -55,7 +61,6 @@ pub fn build(b: *std.Build) !void {
             .sources = &.{"source/app.d"},
             .dflags = dflags.items,
             .use_zigcc = true,
-            .zcc_options = try zcc.buildOptions(b, target),
         });
     }
 }

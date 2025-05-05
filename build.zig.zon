@@ -1,14 +1,15 @@
 .{
-    .name = "pacman-d",
+    .name = .pacman_d,
     .version = "0.0.1",
+    .fingerprint = 0xbd5e5536d6302ac5,
     .dependencies = .{
         .abs = .{
-            .url = "git+https://github.com/kassane/anotherbuildstep#0457a46f52c6151b754437c5b5e0b01856d34fa4",
-            .hash = "12200ecd64e7a19d4f88a05c529ca7b7b98f8389fcb6983256fa30983f71f7162181",
+            .url = "git+https://github.com/kassane/anotherbuildstep#9ada3f148ccc74b0f7154dbaf3a93fb0f95d6dbe",
+            .hash = "abs-0.2.0-2zXK4XE4AQA5S-XbUHPI74y276HuzHhP0P2iZteAEWXU",
         },
         .sokol = .{
-            .url = "git+https://github.com/kassane/sokol-d#v0.1.6",
-            .hash = "1220b29c692b9a6ca52a25e05019a468f6ec20482a0554468b80d6385996081595f0",
+            .url = "git+https://github.com/kassane/sokol-d#v0.2.0",
+            .hash = "sokol-0.2.0-mJ6GZ9ocKwBN9d7p45VpMhH39q7jIktyvChjxAi2LISE",
         },
     },
     .paths = .{

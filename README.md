@@ -11,8 +11,8 @@ D bindings for the sokol headers are here: https://github.com/kassane/sokol-d
 
 ### Required
 
-- [zig](https://ziglang.org/download) v0.13.0
-- [ldc](https://ldc-developers.github.io) v1.36.0 or latest-CI (nightly)
+- [zig](https://ziglang.org/download) v0.14.0
+- [ldc](https://ldc-developers.github.io) v1.40.1 or latest-CI (nightly)
 
 ### References
 
