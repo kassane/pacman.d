@@ -25,8 +25,9 @@ import sound;
 
 extern (C):
 @nogc nothrow:
+@system:
 
-static void init()
+void init()
 {
   gfx_init;
   snd_init;
@@ -41,13 +42,13 @@ static void init()
   }
 }
 
-static void cleanup()
+void cleanup()
 {
   sg.shutdown;
   saudio.shutdown;
 }
 
-static void frame()
+void frame()
 {
 
   // run the game at a fixed tick rate regardless of frame rate
@@ -79,10 +80,10 @@ static void frame()
     // call the top-level game state update function
     switch (state.gamestate)
     {
-    case state.gamestate.GAMESTATE_INTRO:
+    case GameState.GAMESTATE_INTRO:
       intro_tick();
       break;
-    case state.gamestate.GAMESTATE_GAME:
+    case GameState.GAMESTATE_GAME:
       game_tick();
       break;
     default:
@@ -93,7 +94,7 @@ static void frame()
   snd_frame(cast(int) frame_time_ns);
 }
 
-static void input(const(sapp.Event)* ev)
+void input(const(sapp.Event)* ev)
 {
   if (state.input.enabled)
   {
@@ -129,7 +130,7 @@ static void input(const(sapp.Event)* ev)
   }
 }
 
-void main()
+extern (C) int main()
 {
   sapp.Desc runner = {
     window_title: "pacman.d",
@@ -143,4 +144,5 @@ void main()
     logger: {func: &log.func}
   };
   sapp.run(runner);
+  return 0;
 }

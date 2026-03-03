@@ -1,7 +1,6 @@
 module data;
 
 import sg = sokol.gfx;
-import sound;
 
 extern (C):
 @nogc nothrow:
@@ -394,8 +393,9 @@ struct State
 		ubyte fade;
 
 		// the 36x28 tile framebuffer
-		ubyte[DISPLAY_TILES_Y][DISPLAY_TILES_X] video_ram; // tile codes
-		ubyte[DISPLAY_TILES_Y][DISPLAY_TILES_X] color_ram; // color codes
+		// In D, ubyte[W][H] = array of H rows of width W, accessed as [y][x]
+		ubyte[DISPLAY_TILES_X][DISPLAY_TILES_Y] video_ram; // tile codes
+		ubyte[DISPLAY_TILES_X][DISPLAY_TILES_Y] color_ram; // color codes
 
 		// up to 8 sprites
 		Sprite[NUM_SPRITES] sprite;
@@ -413,7 +413,7 @@ struct State
 			sg.Image render_target;
 			sg.Sampler sampler;
 			sg.Pipeline pip;
-			sg.Attachments attachments;
+			sg.View color_attach_view;
 			sg.Bindings bind;
 		}
 
@@ -434,7 +434,8 @@ struct State
 		Vertex[MAX_VERTICES] vertices;
 
 		// scratch-buffer for tile-decoding (only happens once)
-		ubyte[TILE_TEXTURE_HEIGHT][TILE_TEXTURE_WIDTH] tile_pixels;
+		// In D, ubyte[W][H] = array of H elements of type ubyte[W], accessed as [y][x]
+		ubyte[TILE_TEXTURE_WIDTH][TILE_TEXTURE_HEIGHT] tile_pixels;
 
 		// scratch buffer for the color palette
 		uint[256] color_palette;
@@ -527,52 +528,7 @@ const LevelSpec[MAX_LEVELSPEC] levelspec_table = [
 	{Fruit.FRUIT_KEY, 500, 1,},
 ];
 
-// forward-declared sound-effect register dumps (recorded from Pacman arcade emulator)
-const uint[490] snd_dump_prelude = 0;
-const uint[90] snd_dump_dead = 0;
-
-// sound effect description structs
-const SoundDesc snd_prelude = {
-	ptr: snd_dump_prelude.ptr,
-	size: snd_dump_prelude.sizeof,
-	voice: [true, true, false]
-};
-
-const SoundDesc snd_dead = {
-	ptr: snd_dump_dead.ptr,
-	size: snd_dump_dead.sizeof,
-	voice: [false, false, true]
-};
-
-const SoundDesc snd_eatdot1 = {
-	func: &snd_func_eatdot1,
-	voice: [false, false, true]
-};
-
-const SoundDesc snd_eatdot2 = {
-	func: &snd_func_eatdot2,
-	voice: [false, false, true]
-};
-
-const SoundDesc snd_eatghost = {
-	func: &snd_func_eatghost,
-	voice: [false, false, true]
-};
-
-const SoundDesc snd_eatfruit = {
-	func: &snd_func_eatfruit,
-	voice: [false, false, true]
-};
-
-const SoundDesc snd_weeooh = {
-	func: &snd_func_weeooh,
-	voice: [false, true, false]
-};
-
-const SoundDesc snd_frightened = {
-	func: &snd_func_frightened,
-	voice: [false, true, false]
-};
+// Sound effect description structs are defined in sound.d (alongside the actual dump data)
 
 // deactivate a time trigger
 void disable(scope ref Trigger t)

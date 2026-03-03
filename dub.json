@@ -1,0 +1,83 @@
+{
+	"name": "pacman",
+	"description": "Pacman.d using sokol-d",
+	"targetPath": "build",
+	"targetName": "pacman",
+	"environments": {
+		"SOKOL_ROOTPATH": "${SOKOL_D_PACKAGE_DIR}"
+	},
+	"dependencies": {
+		"sokol-d": "~>0.4.3"
+	},
+	"configurations": [
+		{
+			"targetType": "executable",
+			"subConfigurations": {
+				"sokol-d": "sokol-static"
+			},
+			"name": "native"
+		},
+		{
+			"targetType": "executable",
+			"subConfigurations": {
+				"sokol-d": "sokol-vulkan"
+			},
+			"name": "vulkan"
+		},
+		{
+			"targetType": "staticLibrary",
+			"subConfigurations": {
+				"sokol-d": "sokol-wgles3"
+			},
+			"postGenerateCommands": [
+				"$DC -run ${SOKOL_D_PACKAGE_DIR}/build.d -- --target=wasm --backend=gles3 --link=pacman --verbose"
+			],
+			"name": "wasm"
+		},
+		{
+			"targetType": "staticLibrary",
+			"subConfigurations": {
+				"sokol-d": "sokol-wgpu"
+			},
+			"postGenerateCommands": [
+				"$DC -run ${SOKOL_D_PACKAGE_DIR}/build.d -- --target=wasm --backend=wgpu --link=pacman --verbose"
+			],
+			"name": "wgpu"
+		}
+	],
+	"buildTypes": {
+		"debug": {
+			"buildOptions": [
+				"debugMode",
+				"debugInfo",
+				"betterC"
+			]
+		},
+		"release": {
+			"buildOptions": [
+				"releaseMode",
+				"inline",
+				"optimize",
+				"betterC"
+			]
+		},
+		"release-nobounds": {
+			"buildOptions": [
+				"releaseMode",
+				"inline",
+				"noBoundsCheck",
+				"optimize",
+				"betterC"
+			]
+		},
+		"release-betterc": {
+			"buildOptions": [
+				"releaseMode",
+				"inline",
+				"noBoundsCheck",
+				"optimize",
+				"betterC"
+			]
+		}
+	}
+}

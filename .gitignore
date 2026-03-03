@@ -25,10 +25,8 @@ docs/
 
 ## dub packages
 dub.*.json
-bin/
-
-# zig build
-*zig-*/
+build/
+web/
 
 # vscode
 .vscode/

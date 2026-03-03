@@ -12,6 +12,7 @@ import shd = shader.pacman;
 
 extern (C):
 nothrow @nogc:
+@system:
 
 // xorshift random number generator
 uint xorshift32()
@@ -115,7 +116,7 @@ void game_init_playfield()
   t['x']=0xF2; t['y']=0xF3; t['z']=0xF4; t['m']=0xED; t['n']=0xEC; t['o']=0xEF;
   t['p']=0xEE; t['j']=0xDD; t['i']=0xD2; t['k']=0xDB; t['q']=0xD3; t['s']=0xF1;
   t['t']=0xF0; t['-']=TILE_DOOR; t['P']=TILE_PILL;
-  for (int y = 3, i = 0; y <= DISPLAY_TILES_Y - 2; y++)
+  for (int y = 3, i = 0; y <= DISPLAY_TILES_Y - 3; y++)
   {
     for (int x = 0; x < DISPLAY_TILES_X; x++, i++)
     {
@@ -286,7 +287,7 @@ void game_round_init()
     dot_limit: 60
   };
   state.game.ghost[GhostType.GHOSTTYPE_CLYDE] = clyde_starter;
-  Sprite clyde_sprite = {enabled: true, color: COLOR_INKY};
+  Sprite clyde_sprite = {enabled: true, color: COLOR_CLYDE};
   state.gfx.sprite[SpriteIndex.SPRITE_CLYDE] = clyde_sprite;
 }
 
@@ -1002,8 +1003,9 @@ void game_update_actors()
         else if ((ghost.state == GhostState.GHOSTSTATE_CHASE) || (
             ghost.state == GhostState.GHOSTSTATE_SCATTER))
         {
-          // otherwise, ghost eats Pacman, Pacman loses a life
-          version (DbgGodMode)
+          // otherwise, ghost eats Pacman, Pacman loses a life (skip in godmode)
+          version (DbgGodMode) { }
+          else
           {
             snd_clear();
             start(state.game.pacman_eaten);
@@ -1306,8 +1308,7 @@ void gfx_create_resources()
 
   // create a dynamic vertex buffer for the tile and sprite quads
   sg.BufferDesc vbuf = {
-    type: sg.BufferType.Vertexbuffer,
-    usage: sg.Usage.Stream,
+    usage: { vertex_buffer: true, stream_update: true },
     size: state.gfx.vertices.sizeof,
   };
   state.gfx.offscreen.vbuf = sg.makeBuffer(vbuf);
@@ -1339,7 +1340,7 @@ void gfx_create_resources()
         {
           enabled: true,
           src_factor_rgb: sg.BlendFactor.Src_alpha,
-          dst_factor_rgb: sg.BlendFactor.One_minus_blend_alpha,
+          dst_factor_rgb: sg.BlendFactor.One_minus_src_alpha,
         }
       }
     ]
@@ -1356,7 +1357,7 @@ void gfx_create_resources()
 
   // create a render target image with a fixed upscale ratio
   sg.ImageDesc offscreen_render_target = {
-    render_target: true,
+    usage: { color_attachment: true },
     width: DISPLAY_PIXELS_X * 2,
     height: DISPLAY_PIXELS_Y * 2,
     pixel_format: sg.PixelFormat.Rgba8,
@@ -1371,11 +1372,11 @@ void gfx_create_resources()
     wrap_v: sg.Wrap.Clamp_to_edge,
   };
 
-  // pass object for rendering into the offscreen render target
-  sg.AttachmentsDesc offscreen_attachments = {
-    colors: [{image: state.gfx.offscreen.render_target}]
+  // create a color attachment view for the offscreen render target
+  sg.ViewDesc color_attach_vd = {
+    color_attachment: { image: state.gfx.offscreen.render_target }
   };
-  state.gfx.offscreen.attachments = sg.makeAttachments(offscreen_attachments);
+  state.gfx.offscreen.color_attach_view = sg.makeView(color_attach_vd);
 
   // create the 'tile-ROM-texture'
   sg.ImageDesc tile_img_desc = {
@@ -1383,9 +1384,7 @@ void gfx_create_resources()
     height: TILE_TEXTURE_HEIGHT,
     pixel_format: sg.PixelFormat.R8,
     data: {
-      subimage: [
-        [{ptr: state.gfx.tile_pixels.ptr, size: state.gfx.tile_pixels.sizeof}]
-      ]
+      mip_levels: [{ptr: state.gfx.tile_pixels.ptr, size: state.gfx.tile_pixels.sizeof}]
     }
   };
   state.gfx.offscreen.tile_img = sg.makeImage(tile_img_desc);
@@ -1396,9 +1395,7 @@ void gfx_create_resources()
     height: 1,
     pixel_format: sg.PixelFormat.Rgba8,
     data: {
-      subimage: [
-        [{state.gfx.color_palette.ptr, size: state.gfx.color_palette.sizeof}]
-      ]
+      mip_levels: [{ptr: state.gfx.color_palette.ptr, size: state.gfx.color_palette.sizeof}]
     }
   };
   state.gfx.offscreen.palette_img = sg.makeImage(palette_img);
@@ -1413,12 +1410,15 @@ void gfx_create_resources()
   state.gfx.offscreen.sampler = sg.makeSampler(offscreen_sampler);
   state.gfx.display.sampler = sg.makeSampler(display_sampler);
 
+  sg.ViewDesc tile_tex_vd = { texture: { image: state.gfx.offscreen.tile_img } };
+  sg.ViewDesc pal_tex_vd = { texture: { image: state.gfx.offscreen.palette_img } };
+  sg.ViewDesc render_target_tex_vd = { texture: { image: state.gfx.offscreen.render_target } };
   state.gfx.offscreen.bind.vertex_buffers[0] = state.gfx.offscreen.vbuf;
-  state.gfx.offscreen.bind.images[shd.IMG_TILE_TEX] = state.gfx.offscreen.tile_img;
-  state.gfx.offscreen.bind.images[shd.IMG_PAL_TEX] = state.gfx.offscreen.palette_img;
+  state.gfx.offscreen.bind.views[shd.VIEW_TILE_TEX] = sg.makeView(tile_tex_vd);
+  state.gfx.offscreen.bind.views[shd.VIEW_PAL_TEX] = sg.makeView(pal_tex_vd);
   state.gfx.offscreen.bind.samplers[shd.SMP_SMP] = state.gfx.offscreen.sampler;
   state.gfx.display.bind.vertex_buffers[0] = state.gfx.display.quad_vbuf;
-  state.gfx.display.bind.images[shd.IMG_TEX] = state.gfx.offscreen.render_target;
+  state.gfx.display.bind.views[shd.VIEW_TEX] = sg.makeView(render_target_tex_vd);
   state.gfx.display.bind.samplers[shd.SMP_SMP] = state.gfx.display.sampler;
 }
 
@@ -1550,9 +1550,10 @@ void gfx_init()
   sg.Desc gfx = {
     buffer_pool_size: 2,
     image_pool_size: 3,
+    sampler_pool_size: 2,
     shader_pool_size: 2,
     pipeline_pool_size: 2,
-    attachments_pool_size: 1,
+    view_pool_size: 4,
     environment: sglue.environment,
     logger: {func: &log.slog_func},
   };
@@ -1774,7 +1775,8 @@ void gfx_draw()
 
   // render tiles and sprites into offscreen render target
   sg.Pass offs_pass = {
-    action: state.gfx.pass_action, attachments: state.gfx.offscreen.attachments
+    action: state.gfx.pass_action,
+    attachments: { colors: [state.gfx.offscreen.color_attach_view] }
   };
   sg.beginPass(offs_pass);
   sg.applyPipeline(state.gfx.offscreen.pip);

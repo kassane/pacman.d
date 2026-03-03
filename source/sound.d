@@ -8,8 +8,9 @@ import log = sokol.log;
 
 extern(C):
 nothrow @nogc:
+@system:
 
-static void snd_init()
+void snd_init()
 {
 	saudio.Desc desc = {logger: {func: &log.slog_func},};
 	saudio.setup(desc);
@@ -24,13 +25,13 @@ static void snd_init()
 	state.audio.voice_tick_period = 96_000_000 / samples_per_sec;
 }
 
-static void snd_shutdown()
+void snd_shutdown()
 {
 	saudio.shutdown;
 }
 
 // the snd_Voiceick() function updates the Namco sound generator and must be called with 96 kHz
-static void snd_Voiceick()
+void snd_voice_tick()
 {
 	for (int i = 0; i < NUM_VOICES; i++)
 	{
@@ -47,7 +48,7 @@ static void snd_Voiceick()
 }
 
 // the snd_sample_tick() function must be called with sample frequency (e.g. 44.1kHz)
-static void snd_sample_tick()
+void snd_sample_tick()
 {
 	float sm = 0.0f;
 	for (int i = 0; i < NUM_VOICES; i++)
@@ -68,7 +69,7 @@ static void snd_sample_tick()
 }
 
 // the sound subsystem's per-frame function
-static void snd_frame(int frame_time_ns)
+void snd_frame(int frame_time_ns)
 {
 	// for each sample to generate...
 	state.audio.sample_accum -= frame_time_ns;
@@ -80,7 +81,7 @@ static void snd_frame(int frame_time_ns)
 		while (state.audio.voice_tick_accum < 0)
 		{
 			state.audio.voice_tick_accum += 1000;
-			snd_Voiceick();
+			snd_voice_tick();
 		}
 		// generate a new sample, and push out to sokol-audio when local sample buffer full
 		snd_sample_tick();
@@ -90,7 +91,7 @@ static void snd_frame(int frame_time_ns)
 /* The sound system's 60 Hz tick function (called from game tick).
     Updates the sound 'hardware registers' for all active sound effects.
 */
-static void snd_tick()
+void snd_tick()
 {
 	// for each active sound effect...
 	for (int sound_slot = 0; sound_slot < NUM_SOUNDS; sound_slot++)
@@ -133,7 +134,7 @@ static void snd_tick()
 }
 
 // clear all active sound effects and start outputting silence
-static void snd_clear()
+void snd_clear()
 {
 	import core.stdc.string : memset;
 
@@ -142,20 +143,21 @@ static void snd_clear()
 }
 
 // start a sound effect
-static void snd_start(int slot, const SoundDesc* desc)
+void snd_start(int slot, const SoundDesc* desc)
 {
+  import core.stdc.string : memset;
   assert((slot >= 0) && (slot < NUM_SOUNDS));
   assert(desc);
   assert((desc.ptr && desc.size) || desc.func);
 
   Sound* snd = &state.audio.sound[slot];
-  // *snd = cast(Sound) { 0 };
+  memset(snd, 0, Sound.sizeof);
   int num_voices = 0;
   for (int i = 0; i < NUM_VOICES; i++)
   {
     if (desc.voice[i])
     {
-      snd.flags |= (1 << i);
+      snd.flags |= cast(ubyte)(1 << i);
       num_voices++;
     }
   }
@@ -175,8 +177,9 @@ static void snd_start(int slot, const SoundDesc* desc)
 }
 
 // stop a sound effect
-static void snd_stop(int slot)
+void snd_stop(int slot)
 {
+  import core.stdc.string : memset;
   assert((slot >= 0) && (slot < NUM_SOUNDS));
 
   // silence the sound's output voices
@@ -184,16 +187,16 @@ static void snd_stop(int slot)
   {
     if (state.audio.sound[slot].flags & (1 << i))
     {
-      // state.audio.voice[i] = cast(Voice) { 0 };
+      memset(&state.audio.voice[i], 0, Voice.sizeof);
     }
   }
 
   // clear the sound slot
-  // state.audio.sound[slot] = cast(Sound) { 0 };
+  memset(&state.audio.sound[slot], 0, Sound.sizeof);
 }
 
 // procedural sound effects
-static void snd_func_eatdot1(int slot)
+void snd_func_eatdot1(int slot)
 {
   assert((slot >= 0) && (slot < NUM_SOUNDS));
   const Sound* snd = &state.audio.sound[slot];
@@ -214,7 +217,7 @@ static void snd_func_eatdot1(int slot)
   }
 }
 
-static void snd_func_eatdot2(int slot)
+void snd_func_eatdot2(int slot)
 {
   assert((slot >= 0) && (slot < NUM_SOUNDS));
   const Sound* snd = &state.audio.sound[slot];
@@ -235,7 +238,7 @@ static void snd_func_eatdot2(int slot)
   }
 }
 
-static void snd_func_eatghost(int slot)
+void snd_func_eatghost(int slot)
 {
   assert((slot >= 0) && (slot < NUM_SOUNDS));
   const Sound* snd = &state.audio.sound[slot];
@@ -256,7 +259,7 @@ static void snd_func_eatghost(int slot)
   }
 }
 
-static void snd_func_eatfruit(int slot)
+void snd_func_eatfruit(int slot)
 {
   assert((slot >= 0) && (slot < NUM_SOUNDS));
   const Sound* snd = &state.audio.sound[slot];
@@ -281,7 +284,7 @@ static void snd_func_eatfruit(int slot)
   }
 }
 
-static void snd_func_weeooh(int slot)
+void snd_func_weeooh(int slot)
 {
   assert((slot >= 0) && (slot < NUM_SOUNDS));
   const Sound* snd = &state.audio.sound[slot];
@@ -302,7 +305,7 @@ static void snd_func_weeooh(int slot)
   }
 }
 
-static void snd_func_frightened(int slot)
+void snd_func_frightened(int slot)
 {
   assert((slot >= 0) && (slot < NUM_SOUNDS));
   const Sound* snd = &state.audio.sound[slot];
@@ -674,3 +677,46 @@ __gshared const(uint)[90] snd_dump_dead = [
 	0x80005000,
 	0x80005800,
 ];
+
+// sound effect description structs (reference the actual dump data above)
+__gshared const SoundDesc snd_prelude = {
+  ptr: snd_dump_prelude.ptr,
+  size: snd_dump_prelude.sizeof,
+  voice: [true, true, false]
+};
+
+__gshared const SoundDesc snd_dead = {
+  ptr: snd_dump_dead.ptr,
+  size: snd_dump_dead.sizeof,
+  voice: [false, false, true]
+};
+
+__gshared const SoundDesc snd_eatdot1 = {
+  func: &snd_func_eatdot1,
+  voice: [false, false, true]
+};
+
+__gshared const SoundDesc snd_eatdot2 = {
+  func: &snd_func_eatdot2,
+  voice: [false, false, true]
+};
+
+__gshared const SoundDesc snd_eatghost = {
+  func: &snd_func_eatghost,
+  voice: [false, false, true]
+};
+
+__gshared const SoundDesc snd_eatfruit = {
+  func: &snd_func_eatfruit,
+  voice: [false, false, true]
+};
+
+__gshared const SoundDesc snd_weeooh = {
+  func: &snd_func_weeooh,
+  voice: [false, true, false]
+};
+
+__gshared const SoundDesc snd_frightened = {
+  func: &snd_func_frightened,
+  voice: [false, true, false]
+};
