@@ -4,14 +4,9 @@
 
 D bindings for the sokol headers are here: https://github.com/kassane/sokol-d
 
-## Status: WiP - not working yet
-
-- [x] Step 0: port to D binding
-- [ ] Step 1: refactoring & improvements
 
 ### Required
 
-- [zig](https://ziglang.org/download) v0.14.0
 - [ldc](https://ldc-developers.github.io) v1.40.1 or latest-CI (nightly)
 
 ### References
