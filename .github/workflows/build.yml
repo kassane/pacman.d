@@ -11,6 +11,10 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
     steps:
       - uses: actions/checkout@main
+      - uses: egor-tensin/vs-shell@v2
+        if: runner.os == 'Windows'
+        with:
+          arch: x64
       - uses: dlang-community/setup-dlang@v2
         with:
           compiler: ldc-latest
