@@ -2,7 +2,7 @@
 
 [![pacman-build](https://github.com/kassane/pacman.d/actions/workflows/build.yml/badge.svg)](https://github.com/kassane/pacman.d/actions/workflows/build.yml)
 
-D bindings for the sokol headers are here: https://github.com/kassane/sokol-d
+D bindings for the sokol headers are here: https://github.com/floooh/sokol-d
 
 
 ### Required
