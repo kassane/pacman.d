@@ -1874,61 +1874,6 @@ var _emscripten_webgl_make_context_current = contextHandle => {
   return success ? 0 : -5;
 };
 
-var _fd_close = fd => 52;
-
-var INT53_MAX = 9007199254740992;
-
-var INT53_MIN = -9007199254740992;
-
-var bigintToI53Checked = num => (num < INT53_MIN || num > INT53_MAX) ? NaN : Number(num);
-
-function _fd_seek(fd, offset, whence, newOffset) {
-  offset = bigintToI53Checked(offset);
-  return 70;
-}
-
-var printCharBuffers = [ null, [], [] ];
-
-var printChar = (stream, curr) => {
-  var buffer = printCharBuffers[stream];
-  if (curr === 0 || curr === 10) {
-    (stream === 1 ? out : err)(UTF8ArrayToString(buffer));
-    buffer.length = 0;
-  } else {
-    buffer.push(curr);
-  }
-};
-
-var flush_NO_FILESYSTEM = () => {
-  // flush anything remaining in the buffers during shutdown
-  if (printCharBuffers[1].length) printChar(1, 10);
-  if (printCharBuffers[2].length) printChar(2, 10);
-};
-
-var SYSCALLS = {
-  varargs: undefined,
-  getStr(ptr) {
-    var ret = UTF8ToString(ptr);
-    return ret;
-  }
-};
-
-var _fd_write = (fd, iov, iovcnt, pnum) => {
-  // hack to support printf in SYSCALLS_REQUIRE_FILESYSTEM=0
-  var num = 0;
-  for (var i = 0; i < iovcnt; i++) {
-    var ptr = HEAPU32[SAFE_HEAP_INDEX(HEAPU32, ((iov) >> 2), "loading")];
-    var len = HEAPU32[SAFE_HEAP_INDEX(HEAPU32, (((iov) + (4)) >> 2), "loading")];
-    iov += 8;
-    for (var j = 0; j < len; j++) {
-      printChar(fd, HEAPU8[SAFE_HEAP_INDEX(HEAPU8, ptr + j, "loading")]);
-    }
-    num += len;
-  }
-  HEAPU32[SAFE_HEAP_INDEX(HEAPU32, ((pnum) >> 2), "storing")] = num;
-  return 0;
-};
-
 var _emscripten_glActiveTexture = x0 => GLctx.activeTexture(x0);
 
 var _glActiveTexture = _emscripten_glActiveTexture;
@@ -3661,9 +3606,6 @@ var wasmImports = {
   /** @export */ emscripten_set_wheel_callback_on_thread: _emscripten_set_wheel_callback_on_thread,
   /** @export */ emscripten_webgl_create_context: _emscripten_webgl_create_context,
   /** @export */ emscripten_webgl_make_context_current: _emscripten_webgl_make_context_current,
-  /** @export */ fd_close: _fd_close,
-  /** @export */ fd_seek: _fd_seek,
-  /** @export */ fd_write: _fd_write,
   /** @export */ glActiveTexture: _glActiveTexture,
   /** @export */ glAttachShader: _glAttachShader,
   /** @export */ glBindBuffer: _glBindBuffer,
