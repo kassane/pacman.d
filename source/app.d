@@ -142,3 +142,11 @@ extern (C) int main()
   sapp.run(runner);
   return 0;
 }
+
+version (WebAssembly)
+{
+    debug
+    {
+        import emscripten.assertd;
+    }
+}
