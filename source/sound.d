@@ -30,12 +30,11 @@ void snd_shutdown()
 	saudio.shutdown;
 }
 
-// the snd_Voiceick() function updates the Namco sound generator and must be called with 96 kHz
+// the snd_voice_tick() function updates the Namco sound generator and must be called with 96 kHz
 void snd_voice_tick()
 {
-	for (int i = 0; i < NUM_VOICES; i++)
+	foreach (ref voice; state.audio.voice)
 	{
-		Voice* voice = &state.audio.voice[i];
 		voice.counter += voice.frequency;
 		/* lookup current 4-bit sample from the waveform number and the
             topmost 5 bits of the 20-bit sample counter
@@ -51,9 +50,8 @@ void snd_voice_tick()
 void snd_sample_tick()
 {
 	float sm = 0.0f;
-	for (int i = 0; i < NUM_VOICES; i++)
+	foreach (ref voice; state.audio.voice)
 	{
-		Voice* voice = &state.audio.voice[i];
 		if (voice.sample_div > 0.0f)
 		{
 			sm += voice.sample_acc / voice.sample_div;
@@ -94,13 +92,12 @@ void snd_frame(int frame_time_ns)
 void snd_tick()
 {
 	// for each active sound effect...
-	for (int sound_slot = 0; sound_slot < NUM_SOUNDS; sound_slot++)
+	foreach (slot, ref snd; state.audio.sound)
 	{
-		Sound* snd = &state.audio.sound[sound_slot];
 		if (snd.func)
 		{
 			// procedural sound effect
-			snd.func(sound_slot);
+			snd.func(cast(int) slot);
 		}
 		else if (snd.flags & SoundFlag.SOUNDFLAG_ALL_VOICES)
 		{
@@ -108,17 +105,16 @@ void snd_tick()
 			assert(snd.data);
 			if (snd.cur_tick == snd.num_ticks)
 			{
-				snd_stop(sound_slot);
+				snd_stop(cast(int) slot);
 				continue;
 			}
 
 			// decode register dump values into voice 'registers'
 			const(uint)* cur_ptr = &snd.data[snd.cur_tick * snd.stride];
-			for (int i = 0; i < NUM_VOICES; i++)
+			foreach (i, ref voice; state.audio.voice)
 			{
 				if (snd.flags & (1 << i))
 				{
-					Voice* voice = &state.audio.voice[i];
 					uint val = *cur_ptr++;
 					// 20 bits frequency
 					voice.frequency = val & ((1 << 20) - 1);
@@ -136,26 +132,23 @@ void snd_tick()
 // clear all active sound effects and start outputting silence
 void snd_clear()
 {
-	import core.stdc.string : memset;
-
-	memset(&state.audio.voice, 0, state.audio.voice.sizeof);
-	memset(&state.audio.sound, 0, state.audio.sound.sizeof);
+	state.audio.voice[] = Voice.init;
+	state.audio.sound[] = Sound.init;
 }
 
 // start a sound effect
 void snd_start(int slot, const SoundDesc* desc)
 {
-  import core.stdc.string : memset;
   assert((slot >= 0) && (slot < NUM_SOUNDS));
   assert(desc);
   assert((desc.ptr && desc.size) || desc.func);
 
   Sound* snd = &state.audio.sound[slot];
-  memset(snd, 0, Sound.sizeof);
+  *snd = Sound.init;
   int num_voices = 0;
-  for (int i = 0; i < NUM_VOICES; i++)
+  foreach (i, active; desc.voice)
   {
-    if (desc.voice[i])
+    if (active)
     {
       snd.flags |= cast(ubyte)(1 << i);
       num_voices++;
@@ -179,20 +172,19 @@ void snd_start(int slot, const SoundDesc* desc)
 // stop a sound effect
 void snd_stop(int slot)
 {
-  import core.stdc.string : memset;
   assert((slot >= 0) && (slot < NUM_SOUNDS));
 
   // silence the sound's output voices
-  for (int i = 0; i < NUM_VOICES; i++)
+  foreach (i, ref voice; state.audio.voice)
   {
     if (state.audio.sound[slot].flags & (1 << i))
     {
-      memset(&state.audio.voice[i], 0, Voice.sizeof);
+      voice = Voice.init;
     }
   }
 
   // clear the sound slot
-  memset(&state.audio.sound[slot], 0, Sound.sizeof);
+  state.audio.sound[slot] = Sound.init;
 }
 
 // procedural sound effects

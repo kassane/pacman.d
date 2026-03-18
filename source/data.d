@@ -197,6 +197,26 @@ struct Int2
 {
 	short x;
 	short y;
+
+@nogc nothrow:
+	Int2 opBinary(string op)(Int2 rhs) const
+		if (op == "+" || op == "-")
+	{
+		static if (op == "+")
+			return Int2(cast(short)(x + rhs.x), cast(short)(y + rhs.y));
+		else
+			return Int2(cast(short)(x - rhs.x), cast(short)(y - rhs.y));
+	}
+
+	Int2 opBinary(string op)(short s) const if (op == "*")
+	{
+		return Int2(cast(short)(x * s), cast(short)(y * s));
+	}
+
+	bool opEquals(Int2 rhs) const
+	{
+		return x == rhs.x && y == rhs.y;
+	}
 }
 
 // common state for pacman and ghosts
@@ -551,45 +571,31 @@ Int2 i2(short x, short y)
 }
 
 // add two Int2
-Int2 add_i2(Int2 v0, Int2 v1)
-{
-	Int2 res = {x: cast(short)(v0.x + v1.x), y: cast(short)(v0.y + v1.y)};
-	return res;
-}
+Int2 add_i2(Int2 v0, Int2 v1) { return v0 + v1; }
 
 // subtract two Int2
-Int2 sub_i2(Int2 v0, Int2 v1)
-{
-	Int2 res = {x: cast(short)(v0.x - v1.x), y: cast(short)(v0.y - v1.y)};
-	return res;
-}
+Int2 sub_i2(Int2 v0, Int2 v1) { return v0 - v1; }
 
 // multiply Int2 with scalar
-Int2 mul_i2(Int2 v, short s)
-{
-	Int2 z = {x: cast(short)(v.x * s), y: cast(short)(v.y * s)};
-	return z;
-}
+Int2 mul_i2(Int2 v, short s) { return v * s; }
 
 // squared-distance between two Int2
 int squared_distance_i2(Int2 v0, Int2 v1)
 {
-	Int2 d = {x: cast(short)(v1.x - v0.x), y: cast(short)(v1.y - v0.y)};
+	Int2 d = v1 - v0;
 	return d.x * d.x + d.y * d.y;
 }
 
 // check if two Int2 are equal
-bool equal_i2(Int2 v0, Int2 v1)
-{
-	return (v0.x == v1.x) && (v0.y == v1.y);
-}
+bool equal_i2(Int2 v0, Int2 v1) { return v0 == v1; }
 
-// check if two Int2 are nearly equal
+// check if two Int2 are nearly equal (no C stdlib needed)
 bool nearequal_i2(Int2 v0, Int2 v1, short tolerance)
 {
-	import core.stdc.stdlib : abs;
-
-	return (abs(v1.x - v0.x) <= tolerance) && (abs(v1.y - v0.y) <= tolerance);
+	int dx = v1.x - v0.x;
+	int dy = v1.y - v0.y;
+	return (dx < 0 ? -dx : dx) <= tolerance
+		&& (dy < 0 ? -dy : dy) <= tolerance;
 }
 
 // convert an actor pos (origin at center) to sprite pos (origin top left)

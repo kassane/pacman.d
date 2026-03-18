@@ -103,20 +103,16 @@ void input(const(sapp.Event)* ev)
       bool btn_down = ev.type == sapp.EventType.Key_down;
       switch (ev.key_code)
       {
-      case sapp.Keycode.Up:
-      case sapp.Keycode.W:
+      case sapp.Keycode.Up, sapp.Keycode.W:
         state.input.up = state.input.anykey = btn_down;
         break;
-      case sapp.Keycode.Down:
-      case sapp.Keycode.S:
+      case sapp.Keycode.Down, sapp.Keycode.S:
         state.input.down = state.input.anykey = btn_down;
         break;
-      case sapp.Keycode.Left:
-      case sapp.Keycode.A:
+      case sapp.Keycode.Left, sapp.Keycode.A:
         state.input.left = state.input.anykey = btn_down;
         break;
-      case sapp.Keycode.Right:
-      case sapp.Keycode.D:
+      case sapp.Keycode.Right, sapp.Keycode.D:
         state.input.right = state.input.anykey = btn_down;
         break;
       case sapp.Keycode.Escape:

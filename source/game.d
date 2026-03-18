@@ -3,7 +3,6 @@ module game;
 import data;
 import rom;
 import sound;
-import core.stdc.string : memset;
 import sapp = sokol.app;
 import sg = sokol.gfx;
 import sglue = sokol.glue;
@@ -303,16 +302,12 @@ void game_update_tiles()
 
   // update the energizer pill colors (blinking/non-blinking)
   const Int2[NUM_PILLS] pill_pos = [{1, 6}, {26, 6}, {1, 26}, {26, 26}];
-  for (int i = 0; i < NUM_PILLS; i++)
+  foreach (pos; pill_pos)
   {
     if (state.game.freeze)
-    {
-      vid_color(pill_pos[i], COLOR_DOT);
-    }
+      vid_color(pos, COLOR_DOT);
     else
-    {
-      vid_color(pill_pos[i], (state.timing.tick & 0x8) ? 0x10 : 0);
-    }
+      vid_color(pos, (state.timing.tick & 0x8) ? 0x10 : 0);
   }
 
   // clear the fruit-eaten score after Pacman has eaten a bonus fruit
@@ -396,12 +391,11 @@ void game_update_sprites()
   }
 
   // update ghost sprites
-  for (int i = 0; i < GhostType.NUM_GHOSTS; i++)
+  foreach (i, ref ghost; state.game.ghost)
   {
     Sprite* sprite = spr_ghost(cast(GhostType) i);
     if (sprite.enabled)
     {
-      Ghost* ghost = &state.game.ghost[i];
       sprite.pos = actor_to_sprite_pos(ghost.actor.pos);
       // if Pacman has just died, hide ghosts
       if (state.game.freeze & FreezeType.FREEZETYPE_DEAD)
@@ -826,9 +820,8 @@ bool game_update_ghost_dir(Ghost* ghost)
       ];
       int min_dist = 100000;
       int dist = 0;
-      for (int i = 0; i < Dir.NUM_DIRS; i++)
+      foreach (dir; dirs)
       {
-        const Dir dir = dirs[i];
         // if ghost is in one of the two 'red zones', forbid upward movement
         // (see Pacman Dossier "Areas To Exploit")
         if (is_redzone(lookahead_pos) && (dir == Dir.DIR_UP) && (
@@ -882,11 +875,11 @@ void game_update_ghosthouse_dot_counters()
   {
     // otherwise each ghost has his own personal dot counter to decide
     // when to leave the ghost house
-    for (int i = 0; i < GhostType.NUM_GHOSTS; i++)
+    foreach (ref g; state.game.ghost)
     {
-      if (state.game.ghost[i].dot_counter < state.game.ghost[i].dot_limit)
+      if (g.dot_counter < g.dot_limit)
       {
-        state.game.ghost[i].dot_counter++;
+        g.dot_counter++;
         break;
       }
     }
@@ -961,10 +954,8 @@ void game_update_actors()
       game_update_dots_eaten();
       start(state.game.pill_eaten);
       state.game.num_ghosts_eaten = 0;
-      for (int i = 0; i < GhostType.NUM_GHOSTS; i++)
-      {
-        start(state.game.ghost[i].frightened);
-      }
+      foreach (ref g; state.game.ghost)
+        start(g.frightened);
       snd_start(1, &snd_frightened);
     }
     // check if Pacman eats the bonus fruit
@@ -982,9 +973,8 @@ void game_update_actors()
       }
     }
     // check if Pacman collides with any ghost
-    for (int i = 0; i < GhostType.NUM_GHOSTS; i++)
+    foreach (ref ghost; state.game.ghost)
     {
-      Ghost* ghost = &state.game.ghost[i];
       const Int2 ghost_tile_pos = pixel_to_tile_pos(ghost.actor.pos);
       if (equal_i2(tile_pos, ghost_tile_pos))
       {
@@ -1026,18 +1016,17 @@ void game_update_actors()
   }
 
   // Ghost "AIs"
-  for (int ghost_index = 0; ghost_index < GhostType.NUM_GHOSTS; ghost_index++)
+  foreach (ref ghost; state.game.ghost)
   {
-    Ghost* ghost = &state.game.ghost[ghost_index];
     // handle ghost-state transitions
-    game_update_ghost_state(ghost);
+    game_update_ghost_state(&ghost);
     // update the ghost's target position
-    game_update_ghost_target(ghost);
+    game_update_ghost_target(&ghost);
     // finally, move the ghost towards the current target position
-    const int num_move_ticks = game_ghost_speed(ghost);
-    for (int i = 0; i < num_move_ticks; i++)
+    const int num_move_ticks = game_ghost_speed(&ghost);
+    foreach (_; 0 .. num_move_ticks)
     {
-      bool force_move = game_update_ghost_dir(ghost);
+      bool force_move = game_update_ghost_dir(&ghost);
       Actor* actor = &ghost.actor;
       const bool allow_cornering = false;
       if (force_move || can_move(actor.pos, actor.dir, allow_cornering))
@@ -1159,41 +1148,22 @@ void game_tick()
   version (DbgMarkers)
   {
     // visualize current ghost targets
-    for (int i = 0; i < GhostType.NUM_GHOSTS; i++)
+    foreach (i, ref ghost; state.game.ghost)
     {
-      const Ghost* ghost = &state.game.ghost[i];
       ubyte tile = 'X';
       switch (ghost.state)
       {
-      case GhostState.GHOSTSTATE_NONE:
-        tile = 'N';
-        break;
-      case GhostState.GHOSTSTATE_CHASE:
-        tile = 'C';
-        break;
-      case GhostState.GHOSTSTATE_SCATTER:
-        tile = 'S';
-        break;
-      case GhostState.GHOSTSTATE_FRIGHTENED:
-        tile = 'F';
-        break;
-      case GhostState.GHOSTSTATE_EYES:
-        tile = 'E';
-        break;
-      case GhostState.GHOSTSTATE_HOUSE:
-        tile = 'H';
-        break;
-      case GhostState.GHOSTSTATE_LEAVEHOUSE:
-        tile = 'L';
-        break;
-      case GhostState.GHOSTSTATE_ENTERHOUSE:
-        tile = 'E';
-        break;
-      default:
-        break;
+      case GhostState.GHOSTSTATE_NONE:        tile = 'N'; break;
+      case GhostState.GHOSTSTATE_CHASE:       tile = 'C'; break;
+      case GhostState.GHOSTSTATE_SCATTER:     tile = 'S'; break;
+      case GhostState.GHOSTSTATE_FRIGHTENED:  tile = 'F'; break;
+      case GhostState.GHOSTSTATE_EYES:        tile = 'E'; break;
+      case GhostState.GHOSTSTATE_HOUSE:       tile = 'H'; break;
+      case GhostState.GHOSTSTATE_LEAVEHOUSE:  tile = 'L'; break;
+      case GhostState.GHOSTSTATE_ENTERHOUSE:  tile = 'E'; break;
+      default: break;
       }
-      dbg_marker(cast(GhostType) i, state.game.ghost[i].target_pos, tile, cast(ubyte)(
-          COLOR_BLINKY + 2 * i));
+      dbg_marker(cast(GhostType) i, ghost.target_pos, tile, cast(ubyte)(COLOR_BLINKY + 2 * i));
     }
   }
 }
@@ -1630,13 +1600,10 @@ void gfx_add_playfield_vertices()
 
 void gfx_add_debugmarker_vertices()
 {
-  for (int i = 0; i < NUM_DEBUG_MARKERS; i++)
+  foreach (ref dbg; state.gfx.debug_marker)
   {
-    const DebugMarker* dbg = &state.gfx.debug_marker[i];
     if (dbg.enabled)
-    {
       gfx_add_tile_vertices(dbg.tile_pos.x, dbg.tile_pos.y, dbg.tile, dbg.color);
-    }
   }
 }
 
@@ -1646,9 +1613,8 @@ void gfx_add_sprite_vertices()
   const float dy = 1.0f / DISPLAY_PIXELS_Y;
   const float du = cast(float) SPRITE_WIDTH / TILE_TEXTURE_WIDTH;
   const float dv = cast(float) SPRITE_HEIGHT / TILE_TEXTURE_HEIGHT;
-  for (int i = 0; i < NUM_SPRITES; i++)
+  foreach (ref spr; state.gfx.sprite)
   {
-    const Sprite* spr = &state.gfx.sprite[i];
     if (spr.enabled)
     {
       float x0, x1, y0, y1;
@@ -1802,20 +1768,15 @@ static State state;
 // clear tile and color buffer
 void vid_clear(ubyte tile_code, ubyte color_code)
 {
-  memset(&state.gfx.video_ram, tile_code, state.gfx.video_ram.sizeof);
-  memset(&state.gfx.color_ram, color_code, state.gfx.color_ram.sizeof);
+  foreach (ref row; state.gfx.video_ram) row[] = tile_code;
+  foreach (ref row; state.gfx.color_ram) row[] = color_code;
 }
 
 // clear the playfield's rectangle in the color buffer
 void vid_color_playfield(ubyte color_code)
 {
-  for (int y = 3; y < DISPLAY_TILES_Y - 2; y++)
-  {
-    for (int x = 0; x < DISPLAY_TILES_X; x++)
-    {
-      state.gfx.color_ram[y][x] = color_code;
-    }
-  }
+  foreach (ref row; state.gfx.color_ram[3 .. DISPLAY_TILES_Y - 2])
+    row[] = color_code;
 }
 
 // check if a tile position is valid
@@ -1985,7 +1946,7 @@ void vid_fruit_score(Fruit fruit_type)
 // clear input state and disable input
 void input_disable()
 {
-  memset(&state.input, 0, state.input.sizeof);
+  state.input = typeof(state.input).init;
 }
 
 // enable input again
@@ -2084,7 +2045,7 @@ bool before(scope ref Trigger t, uint ticks)
 // disable and clear all sprites
 void spr_clear()
 {
-  memset(&state.gfx.sprite, 0, state.gfx.sprite.sizeof);
+  state.gfx.sprite[] = Sprite.init;
 }
 
 // get pointer to pacman sprite
